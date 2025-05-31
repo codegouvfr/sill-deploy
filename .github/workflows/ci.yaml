@@ -80,6 +80,7 @@ jobs:
       cancel-in-progress: true
     needs:
       - check_if_version_upgraded
+    if: needs.check_if_version_upgraded.outputs.is_upgraded_version == 'true'
     env:
       TO_VERSION: ${{ needs.check_if_version_upgraded.outputs.to_version }}
     steps:
@@ -105,6 +106,7 @@ jobs:
     needs:
       - trigger_pre_production_deploy
       - check_if_version_upgraded
+    if: needs.check_if_version_upgraded.outputs.is_upgraded_version == 'true'
     env:
       TO_VERSION: ${{ needs.check_if_version_upgraded.outputs.to_version }}
     steps:
