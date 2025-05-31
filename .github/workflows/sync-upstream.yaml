@@ -23,7 +23,7 @@ jobs:
 
       - name: Add upstream remote
         run: |
-          git remote add upstream https://github.com/codegouvfr/sill.git
+          git remote add upstream https://github.com/codegouvfr/catalogi.git
           git fetch upstream
 
       - name: Sync with upstream/main
