@@ -10,8 +10,7 @@ import type { Equals, ReturnType } from "tsafe";
 import { assert } from "tsafe/assert";
 import { z } from "zod";
 import { DbApiV2 } from "../core/ports/DbApiV2";
-import { ExternalDataOrigin, GetSoftwareExternalData, Language } from "../core/ports/GetSoftwareExternalData";
-import type { GetSoftwareExternalDataOptions } from "../core/ports/GetSoftwareExternalDataOptions";
+import { Language } from "../core/ports/GetSoftwareExternalData";
 import { UiConfig } from "../core/uiConfigSchema";
 import type { UseCases } from "../core/usecases";
 import {
@@ -23,30 +22,30 @@ import {
     UserWithId
 } from "../core/usecases/readWriteSillData";
 import { getMonorepoRootPackageJson } from "../tools/getMonorepoRootPackageJson";
-
 import type { OptionalIfCanBeUndefined } from "../tools/OptionalIfCanBeUndefined";
 import type { Context } from "./context";
 import type { OidcParams } from "../core/usecases/auth/oidcClient";
+import { resolveAdapterFromSource } from "../core/adapters/resolveAdapter";
+
+export type UseCasesUsedOnRouter = Pick<
+    UseCases,
+    | "getUser"
+    | "getSoftwareFormAutoFillDataFromExternalAndOtherSources"
+    | "createSoftware"
+    | "updateSoftware"
+    | "fetchAndSaveExternalDataForOneSoftwarePackage"
+    | "getPopulateSoftware"
+    | "auth"
+>;
 
 export function createRouter(params: {
     dbApi: DbApiV2;
-    useCases: UseCases;
+    useCases: UseCasesUsedOnRouter;
     oidcParams: OidcParams & { manageProfileUrl: string };
     redirectUrl: string | undefined;
-    externalSoftwareDataOrigin: ExternalDataOrigin;
-    getSoftwareExternalDataOptions: GetSoftwareExternalDataOptions;
-    getSoftwareExternalData: GetSoftwareExternalData;
     uiConfig: UiConfig;
 }) {
-    const {
-        useCases,
-        dbApi,
-        oidcParams,
-        redirectUrl,
-        externalSoftwareDataOrigin: externalDataOrigin,
-        getSoftwareExternalDataOptions,
-        uiConfig
-    } = params;
+    const { useCases, dbApi, oidcParams, redirectUrl, uiConfig } = params;
 
     const t = initTRPC.context<Context>().create({
         "transformer": superjson
@@ -83,7 +82,7 @@ export function createRouter(params: {
     const router = t.router({
         // PUBLIC PROCEDURES
         "getRedirectUrl": loggedProcedure.query(() => redirectUrl),
-        "getExternalSoftwareDataOrigin": loggedProcedure.query(() => externalDataOrigin),
+        "getExternalSoftwareDataOrigin": loggedProcedure.query(async () => (await dbApi.source.getMainSource()).kind),
         "getApiVersion": loggedProcedure.query(
             (() => {
                 const out: string = JSON.parse(
@@ -96,7 +95,9 @@ export function createRouter(params: {
         "getOidcManageProfileUrl": loggedProcedure.query(() => oidcParams.manageProfileUrl),
         "getUiConfig": loggedProcedure.query(() => uiConfig),
         "getMainSource": loggedProcedure.query(() => dbApi.source.getMainSource()),
-        "getSoftwares": loggedProcedure.query(() => dbApi.software.getAll()),
+        "getSoftwares": loggedProcedure.query(() => {
+            return useCases.getPopulateSoftware();
+        }),
         "getInstances": loggedProcedure.query(() => dbApi.instance.getAll()),
         "getIsUserProfilePublic": loggedProcedure
             .input(
@@ -130,9 +131,13 @@ export function createRouter(params: {
             .query(async ({ input }) => {
                 const { queryString, language } = input;
                 const mainSource = await dbApi.source.getMainSource();
+                const sourceGateway = resolveAdapterFromSource(mainSource);
+
+                if (sourceGateway.sourceProfile !== "Primary")
+                    throw new Error("Getting option is not possible from a secondary source");
 
                 const [queryResults, softwareExternalDataIds] = await Promise.all([
-                    getSoftwareExternalDataOptions({ queryString, language, source: mainSource }),
+                    sourceGateway.softwareOptions.getById({ queryString, language, source: mainSource }),
                     dbApi.software.getAllSillSoftwareExternalIds(mainSource.slug)
                 ]);
 
@@ -140,7 +145,7 @@ export function createRouter(params: {
                     externalId: externalId,
                     description: description,
                     label: label,
-                    isInSill: softwareExternalDataIds.includes(externalId),
+                    registered: softwareExternalDataIds.includes(externalId),
                     isLibreSoftware,
                     sourceSlug
                 }));
@@ -165,7 +170,7 @@ export function createRouter(params: {
             .mutation(async ({ ctx: { currentUser }, input }) => {
                 const { formData } = input;
 
-                const existingSoftware = await dbApi.software.getByName(formData.softwareName.trim());
+                const existingSoftware = await dbApi.software.getByName({ softwareName: formData.softwareName.trim() });
 
                 if (existingSoftware) {
                     throw new TRPCError({
@@ -175,10 +180,12 @@ export function createRouter(params: {
                 }
 
                 try {
-                    await dbApi.software.create({
+                    const createdSoftwareId = await useCases.createSoftware({
                         formData,
                         userId: currentUser.id
                     });
+
+                    await useCases.fetchAndSaveExternalDataForOneSoftwarePackage({ softwareId: createdSoftwareId });
                 } catch (e) {
                     throw new TRPCError({
                         "code": "INTERNAL_SERVER_ERROR",
@@ -196,8 +203,8 @@ export function createRouter(params: {
             .mutation(async ({ ctx: { currentUser }, input }) => {
                 const { softwareSillId, formData } = input;
 
-                await dbApi.software.update({
-                    softwareSillId,
+                await useCases.updateSoftware({
+                    softwareId: softwareSillId,
                     formData,
                     userId: currentUser.id
                 });
@@ -212,7 +219,7 @@ export function createRouter(params: {
             .mutation(async ({ ctx: { currentUser }, input }) => {
                 const { formData, softwareId } = input;
 
-                const software = await dbApi.software.getById(softwareId);
+                const software = await dbApi.software.getBySoftwareId(softwareId);
                 if (!software)
                     throw new TRPCError({
                         "code": "NOT_FOUND",
@@ -252,7 +259,7 @@ export function createRouter(params: {
             .mutation(async ({ ctx: { currentUser }, input }) => {
                 const { softwareId, declarationType } = input;
 
-                const software = await dbApi.software.getById(softwareId);
+                const software = await dbApi.software.getBySoftwareId(softwareId);
                 if (!software)
                     throw new TRPCError({
                         "code": "NOT_FOUND",
@@ -438,7 +445,6 @@ const zSoftwareFormData = (() => {
         "softwareType": zSoftwareType,
         "externalIdForSource": z.string().optional(),
         "sourceSlug": z.string(),
-        "comptoirDuLibreId": z.number().optional(),
         "softwareName": z.string(),
         "softwareDescription": z.string(),
         "softwareLicense": z.string(),

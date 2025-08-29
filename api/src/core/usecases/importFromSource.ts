@@ -4,13 +4,25 @@
 
 import { DbApiV2 } from "../ports/DbApiV2";
 import { halAPIGateway } from "../adapters/hal/HalAPI";
-import { halRawSoftwareToSoftwareForm } from "../adapters/hal/getSoftwareForm";
-import { getWikidataForm } from "../adapters/wikidata/getSoftwareForm";
+import { makeCreateSofware } from "./createSoftware";
+import { Source } from "./readWriteSillData";
+import { GetSoftwareFormData } from "../ports/GetSoftwareFormData";
+import { resolveAdapterFromSource } from "../adapters/resolveAdapter";
+import { makeZenodoApi } from "../adapters/zenodo/zenodoAPI";
 
-export const importFromHALSource: (dbApi: DbApiV2) => (userEmail: string) => Promise<Promise<number | undefined>[]> = (
-    dbApi: DbApiV2
-) => {
-    return async (userEmail: string) => {
+export type ImportFromSource = (params: {
+    userEmail: string;
+    source: Source;
+    softwareIdOnSource?: string[];
+}) => Promise<number[]>;
+
+export const importFromSource: (dbApi: DbApiV2) => ImportFromSource = (dbApi: DbApiV2) => {
+    return async ({ userEmail, source, softwareIdOnSource }) => {
+        const sourceGateway = resolveAdapterFromSource(source);
+
+        if (sourceGateway.sourceProfile !== "Primary")
+            throw new Error("[UC:Import] Import if not possible from a secondary source");
+
         const user = await dbApi.user.getByEmail(userEmail);
         const userId = user
             ? user.id
@@ -22,72 +34,59 @@ export const importFromHALSource: (dbApi: DbApiV2) => (userEmail: string) => Pro
                   sub: null
               });
 
-        const rawHALSoftware = await halAPIGateway.software.getAll({ SWHFilter: true });
-        const dbSoftwares = await dbApi.software.getAll();
-        const dbSoftwaresNames = dbSoftwares.map(software => {
-            return software.softwareName;
-        });
+        const getSoftwareForm = sourceGateway.softwareForm.getById;
+        let result = [];
 
-        return rawHALSoftware.map(async rawHALSoftwareItem => {
-            const index = dbSoftwaresNames.indexOf(rawHALSoftwareItem.title_s[0]);
+        const softwareIds =
+            softwareIdOnSource && softwareIdOnSource.length > 0 && softwareIdOnSource[0] !== ""
+                ? softwareIdOnSource
+                : await resolveAllIdsAccordingToSource(source);
 
-            if (index != -1) {
-                if (dbSoftwares[index].externalId === rawHALSoftwareItem.docid) {
-                    return dbSoftwares[index].softwareId;
-                }
+        console.info(`[UC:Import] Importing  ${softwareIds.length} software packages from ${source.slug}`);
 
-                // Not equal -> new HAL notice version, need to update
-                const newHALSoftwareForm = await halRawSoftwareToSoftwareForm(rawHALSoftwareItem);
-                await dbApi.software.update({
-                    softwareSillId: dbSoftwares[index].softwareId,
-                    formData: newHALSoftwareForm,
-                    userId: userId
-                });
-
-                return dbSoftwares[index].softwareId;
-            } else {
-                console.info("Importing HAL : ", rawHALSoftwareItem.docid);
-                const newSoft = await halRawSoftwareToSoftwareForm(rawHALSoftwareItem);
-                return dbApi.software.create({ formData: newSoft, userId });
-            }
-        });
+        for (const externalId of softwareIds) {
+            const newId = await checkSoftware(dbApi, source, externalId, getSoftwareForm, userId);
+            result.push(newId);
+        }
+        return result.filter(val => val != undefined);
     };
 };
 
-export const importFromWikidataSource: (
-    dbApi: DbApiV2
-) => (userEmail: string, softwareIds: string[]) => Promise<Promise<number | undefined>[]> = (dbApi: DbApiV2) => {
-    return async (userEmail: string, softwareIds: string[]) => {
-        const user = await dbApi.user.getByEmail(userEmail);
-        const userId = user
-            ? user.id
-            : await dbApi.user.add({
-                  email: userEmail,
-                  "isPublic": false,
-                  organization: "",
-                  about: "This is a bot user created to import data.",
-                  sub: null
-              });
+const resolveAllIdsAccordingToSource = async (source: Source): Promise<string[]> => {
+    switch (source.kind) {
+        case "HAL":
+            return (await halAPIGateway.software.getAll({ SWHFilter: true })).map(doc => doc.docid);
+        case "Zenodo":
+            const zenodoAPI = makeZenodoApi();
+            return (await zenodoAPI.records.getAllSoftware()).hits.hits.map(item => item.id.toString());
+        case "ComptoirDuLibre":
+        case "wikidata":
+            throw new Error("[UC:Import] Not Implemented, but you can specify the list of ids you want to import");
+        // Secondary Sources
+        case "CNLL":
+            throw new Error("[UC:Import] Import if not possible from a secondary source");
+        default:
+            const shouldNotBeReached: never = source.kind;
+            throw new Error("[UC:Import] Not Implemented", shouldNotBeReached);
+    }
+};
 
-        const dbSoftwares = await dbApi.software.getAll();
-        const dbSoftwaresNames = dbSoftwares.map(software => {
-            return software.softwareName;
-        });
+const checkSoftware = async (
+    dbApi: DbApiV2,
+    source: Source,
+    externalId: string,
+    getSoftwareForm: GetSoftwareFormData,
+    userId: number
+) => {
+    // Get software form from source
+    const softwareForm = await getSoftwareForm({ externalId, source });
+    if (!softwareForm || !softwareForm.softwareName) {
+        return undefined;
+    }
 
-        return softwareIds.map(async (softwareId: string) => {
-            const newSoft = await getWikidataForm(softwareId);
-            if (!newSoft) {
-                return -1;
-            }
-
-            const index = dbSoftwaresNames.indexOf(newSoft?.softwareName ?? "");
-
-            if (index != -1) {
-                return dbSoftwares[index].softwareId;
-            } else {
-                console.log("Importing wikidata : ", softwareId);
-                return dbApi.software.create({ formData: newSoft, userId });
-            }
-        });
-    };
+    console.info(
+        `[UC:Import] Importing ${softwareForm.softwareName}(${externalId}) from ${source.slug} : Adding software and externalData `
+    );
+    const createSoftware = makeCreateSofware(dbApi);
+    return createSoftware({ formData: softwareForm, userId });
 };

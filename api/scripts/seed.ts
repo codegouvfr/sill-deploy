@@ -11,6 +11,7 @@ import { Database } from "../src/core/adapters/dbApi/kysely/kysely.database";
 import { createPgDialect } from "../src/core/adapters/dbApi/kysely/kysely.dialect";
 import { SoftwareFormData, Source } from "../src/lib/ApiTypes";
 import { OmitFromExisting } from "../src/core/utils";
+import { makeCreateSofware } from "../src/core/usecases/createSoftware";
 
 const seed = async () => {
     const dbUrl = process.env.DATABASE_URL;
@@ -35,7 +36,7 @@ const seed = async () => {
     console.info("Adding source");
     const source = {
         slug: "wikidata",
-        description: null,
+        description: undefined,
         url: "https://www.wikidata.org/",
         kind: "wikidata",
         priority: 1
@@ -50,6 +51,8 @@ const seed = async () => {
         sub: null
     };
 
+    const UCCreateSofware = makeCreateSofware(dbApi);
+
     console.info("Adding user");
     const userId = await dbApi.user.add(someUser);
 
@@ -63,7 +66,6 @@ const seed = async () => {
             },
             externalIdForSource: undefined,
             sourceSlug: "wikidata",
-            comptoirDuLibreId: undefined,
             softwareLicense: "MIT",
             softwareMinimalVersion: "18.0.0",
             similarSoftwareExternalDataIds: [],
@@ -82,7 +84,6 @@ const seed = async () => {
             },
             externalIdForSource: undefined,
             sourceSlug: "wikidata",
-            comptoirDuLibreId: undefined,
             softwareLicense: "GPL-2.0",
             softwareMinimalVersion: "2.0.0",
             similarSoftwareExternalDataIds: [],
@@ -102,7 +103,6 @@ const seed = async () => {
             },
             externalIdForSource: undefined,
             sourceSlug: "wikidata",
-            comptoirDuLibreId: undefined,
             softwareLicense: "Apache-2.0",
             softwareMinimalVersion: "4.1.0",
             similarSoftwareExternalDataIds: [],
@@ -121,7 +121,6 @@ const seed = async () => {
             },
             externalIdForSource: undefined,
             sourceSlug: "wikidata",
-            comptoirDuLibreId: undefined,
             softwareLicense: "GPL-2.0",
             softwareMinimalVersion: "3.0.0",
             similarSoftwareExternalDataIds: [],
@@ -140,7 +139,6 @@ const seed = async () => {
             },
             externalIdForSource: undefined,
             sourceSlug: "wikidata",
-            comptoirDuLibreId: undefined,
             softwareLicense: "GPL-3.0",
             softwareMinimalVersion: "2.10.0",
             similarSoftwareExternalDataIds: [],
@@ -159,7 +157,6 @@ const seed = async () => {
             },
             externalIdForSource: "Q110492908",
             sourceSlug: "wikidata",
-            comptoirDuLibreId: 461,
             softwareLicense: "MIT",
             softwareMinimalVersion: "0.26.25",
             similarSoftwareExternalDataIds: [],
@@ -173,7 +170,7 @@ const seed = async () => {
     ];
 
     for (const formData of softwarePackagesFormData) {
-        await dbApi.software.create({ userId, formData });
+        await UCCreateSofware({ userId, formData });
     }
 
     // Add instances for Onyxia
