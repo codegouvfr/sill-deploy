@@ -16,7 +16,7 @@ START_DATETIME=$(date "+%Y-%m-%d %H:%M:%S")
 
 echo "Starting update at ${START_DATETIME}"
 # Run the update command
-yarn update
+yarn job:update
 
 END_DATETIME=$(date "+%Y-%m-%d %H:%M:%S")
 
