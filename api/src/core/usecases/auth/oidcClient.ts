@@ -135,7 +135,9 @@ export class HttpOidcClient implements OidcClient {
 
         const responseBody = await response.text();
 
-        const userInfoAsString = responseBody.startsWith("ey") ? atob(responseBody.split(".")[1]) : responseBody;
+        const userInfoAsString = responseBody.startsWith("ey")
+            ? Buffer.from(responseBody.split(".")[1], "base64").toString("utf8")
+            : responseBody;
 
         return JSON.parse(userInfoAsString);
     }
