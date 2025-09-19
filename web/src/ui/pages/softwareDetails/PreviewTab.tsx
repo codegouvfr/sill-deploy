@@ -70,6 +70,16 @@ export const PreviewTab = (props: Props) => {
     const { t } = useTranslation();
     const { lang } = useLang();
 
+    const usefullLinks = identifiers.filter(identifier => {
+        const identifierURLString = identifier?.url?.toString();
+        return (
+            !officialWebsiteUrl ||
+            (officialWebsiteUrl &&
+                identifierURLString &&
+                !officialWebsiteUrl.startsWith(identifierURLString))
+        );
+    });
+
     return (
         <>
             <section className={classes.tabContainer}>
@@ -319,44 +329,25 @@ export const PreviewTab = (props: Props) => {
                     </div>
                 )}
 
-                {uiConfig?.softwareDetails.links.enabled && (
+                {uiConfig?.softwareDetails.links.enabled && usefullLinks.length > 0 && (
                     <div className={classes.section}>
                         <p className={cx(fr.cx("fr-text--bold"), classes.item)}>
                             {t("previewTab.use full links")}
                         </p>
-                        {identifiers && (
-                            <>
-                                {identifiers
-                                    .filter(identifier => {
-                                        const identifierURLString =
-                                            identifier?.url?.toString();
-                                        return (
-                                            !officialWebsiteUrl ||
-                                            (officialWebsiteUrl &&
-                                                identifierURLString &&
-                                                !officialWebsiteUrl.startsWith(
-                                                    identifierURLString
-                                                ))
-                                        );
-                                    })
-                                    .map(identifier => {
-                                        const url =
-                                            identifier.url ?? identifier.subjectOf?.url;
 
-                                        return (
-                                            <LogoURLButton
-                                                key={url?.toString()}
-                                                className={cx(
-                                                    fr.cx("fr-ml-4v", "fr-my-2v")
-                                                )}
-                                                priority="secondary"
-                                                url={url}
-                                                labelFromURL={true}
-                                            />
-                                        );
-                                    })}
-                            </>
-                        )}
+                        {usefullLinks.map(identifier => {
+                            const url = identifier.url ?? identifier.subjectOf?.url;
+
+                            return (
+                                <LogoURLButton
+                                    key={url?.toString()}
+                                    className={cx(fr.cx("fr-ml-4v", "fr-my-2v"))}
+                                    priority="secondary"
+                                    url={url}
+                                    labelFromURL={true}
+                                />
+                            );
+                        })}
                     </div>
                 )}
             </section>
