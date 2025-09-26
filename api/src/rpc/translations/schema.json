@@ -52,7 +52,8 @@
                 "referent_other",
                 "provider_one",
                 "providers_other",
-                "appAccronym"
+                "appAccronym",
+                "officialWebsite"
             ]
         },
         "app": {
@@ -533,8 +534,6 @@
             "required": [
                 "external id",
                 "external id hint_fill",
-                "comptoir du libre id",
-                "comptoir du libre id hint",
                 "software name",
                 "software feature",
                 "software feature hint",
@@ -549,8 +548,7 @@
                 "must be an url",
                 "keywords",
                 "keywords hint",
-                "logo preview alt",
-                "invalid comptoir du libre id"
+                "logo preview alt"
             ]
         },
         "softwareFormStep3": {
@@ -1060,7 +1058,7 @@
                 "about": {
                     "type": "string"
                 },
-                "use full links": {
+                "useful links": {
                     "type": "string"
                 },
                 "prerogatives": {
@@ -1133,7 +1131,7 @@
             "additionalProperties": false,
             "required": [
                 "about",
-                "use full links",
+                "useful links",
                 "prerogatives",
                 "last version",
                 "register",

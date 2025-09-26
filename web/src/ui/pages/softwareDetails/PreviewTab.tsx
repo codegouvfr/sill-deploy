@@ -70,7 +70,7 @@ export const PreviewTab = (props: Props) => {
     const { t } = useTranslation();
     const { lang } = useLang();
 
-    const usefullLinks = identifiers.filter(identifier => {
+    const usefulLinks = identifiers.filter(identifier => {
         const identifierURLString = identifier?.url?.toString();
         return (
             !officialWebsiteUrl ||
@@ -329,13 +329,13 @@ export const PreviewTab = (props: Props) => {
                     </div>
                 )}
 
-                {uiConfig?.softwareDetails.links.enabled && usefullLinks.length > 0 && (
+                {uiConfig?.softwareDetails.links.enabled && usefulLinks.length > 0 && (
                     <div className={classes.section}>
                         <p className={cx(fr.cx("fr-text--bold"), classes.item)}>
-                            {t("previewTab.use full links")}
+                            {t("previewTab.useful links")}
                         </p>
 
-                        {usefullLinks.map(identifier => {
+                        {usefulLinks.map(identifier => {
                             const url = identifier.url ?? identifier.subjectOf?.url;
 
                             return (
