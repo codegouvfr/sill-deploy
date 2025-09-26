@@ -92,7 +92,10 @@ export function AuthorCard(props: Props) {
             {author.identifiers?.map(identifier => {
                 return (
                     <div className={classes.externalLinkButtons}>
-                        <LogoURLButton url={identifier.url} labelFromURL={true} />
+                        <LogoURLButton
+                            url={identifier.url ?? identifier.subjectOf?.url}
+                            labelFromURL={true}
+                        />
                     </div>
                 );
             })}

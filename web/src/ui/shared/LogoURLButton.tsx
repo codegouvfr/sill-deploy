@@ -66,9 +66,13 @@ const resolveLogoFromURL = (
         return resolveLogoFromType("CNLL");
     }
 
+    if (urlString.includes("framalibre")) {
+        return resolveLogoFromType("FramaLibre");
+    }
+
     return {
         URLlogo: undefined,
-        textFromURL: undefined
+        textFromURL: new URL(urlString).hostname.replace("www.", "")
     };
 };
 
@@ -167,17 +171,15 @@ export function LogoURLButton(props: Props) {
         iconId
     } = props;
 
+    if (!url) return null;
+
     const urlString = typeof url === "string" ? url : url?.href;
 
     const { classes } = useStyles();
 
     const getUrlMetadata = () => {
         if (type) return resolveLogoFromType(type);
-        if (url) return resolveLogoFromURL(url);
-        return {
-            URLlogo: undefined,
-            textFromURL: undefined
-        };
+        return resolveLogoFromURL(url);
     };
 
     const { URLlogo, textFromURL } = getUrlMetadata();
@@ -211,16 +213,3 @@ const useStyles = tss.withName({ LogoURLButton }).create({
         marginLeft: "7px"
     }
 });
-
-const yo = [
-    {
-        "@type": "PropertyValue",
-        value: "93",
-        subjectOf: {
-            url: "https://cnll.fr/",
-            name: "Union des entreprises du logiciel libre et du numérique ouvert",
-            "@type": "Website",
-            additionalType: "cnll"
-        }
-    }
-];

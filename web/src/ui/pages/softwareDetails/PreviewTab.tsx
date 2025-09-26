@@ -356,6 +356,8 @@ export const PreviewTab = (props: Props) => {
                         {usefulLinks.map(identifier => {
                             const url = identifier.url ?? identifier.subjectOf?.url;
 
+                            if (!url) return null;
+
                             return (
                                 <LogoURLButton
                                     key={url?.toString()}
