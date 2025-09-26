@@ -310,12 +310,19 @@ function wikidataSingleLocalizedStringToLocalizedString(
         Object.fromEntries(languages.map(language => [language, wikidataSingleLocalizedString[language]?.value]))
     );
 
-    if (Object.keys(localizedString).length === 0) {
-        return wikidataSingleLocalizedString[Object.keys(wikidataSingleLocalizedString)[0]]?.value;
+    const wikidataLocals = Object.keys(localizedString);
+
+    if (wikidataLocals.length === 0) {
+        const fallbackLocalForAllLanguage = "mul"; // used by wikidata
+        const firstLocalInList = Object.keys(wikidataSingleLocalizedString)[0];
+        return (
+            wikidataSingleLocalizedString[fallbackLocalForAllLanguage]?.value ??
+            wikidataSingleLocalizedString[firstLocalInList]?.value
+        );
     }
 
     if (Object.values(localizedString).reduce(...allEquals())) {
-        return localizedString[Object.keys(localizedString)[0]];
+        return localizedString[wikidataLocals[0]];
     }
 
     return localizedString;

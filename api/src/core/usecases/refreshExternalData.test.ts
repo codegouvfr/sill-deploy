@@ -297,7 +297,7 @@ describe("fetches software extra data (from different providers)", () => {
                         "//upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Vitejs-logo.svg/250px-Vitejs-logo.svg.png",
                     sourceUrl: "https://github.com/vitejs/vite",
                     websiteUrl: "https://vite.dev/",
-                    programmingLanguages: ["جافا سكريبت"],
+                    programmingLanguages: ["JavaScript"],
                     referencePublications: undefined,
                     identifiers: [
                         {
@@ -410,7 +410,7 @@ describe("fetches software extra data (from different providers)", () => {
                             "value": "Q11354"
                         }
                     ],
-                    programmingLanguages: ["Си"],
+                    programmingLanguages: ["C"],
                     softwareVersion: "2.5.0-alpha",
                     publicationTime: new Date("2017-11-08T00:00:00.000Z"),
                     lastDataFetchAt: expect.any(Number),
