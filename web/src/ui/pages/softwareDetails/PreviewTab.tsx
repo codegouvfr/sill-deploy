@@ -48,7 +48,6 @@ export const PreviewTab = (props: Props) => {
         softwareDateCurrentVersion,
         softwareDescription,
         registerDate,
-        minimalVersionRequired,
         license,
         hasDesktopApp,
         isAvailableAsMobileApp,
@@ -70,15 +69,34 @@ export const PreviewTab = (props: Props) => {
     const { t } = useTranslation();
     const { lang } = useLang();
 
-    const usefulLinks = identifiers.filter(identifier => {
-        const identifierURLString = identifier?.url?.toString();
-        return (
-            !officialWebsiteUrl ||
-            (officialWebsiteUrl &&
-                identifierURLString &&
-                !officialWebsiteUrl.startsWith(identifierURLString))
-        );
-    });
+    const usefulLinks = identifiers
+        .filter(identifier => {
+            const identifierURLString = identifier?.url?.toString();
+            return (
+                !officialWebsiteUrl ||
+                (officialWebsiteUrl &&
+                    identifierURLString &&
+                    !officialWebsiteUrl.startsWith(identifierURLString))
+            );
+        })
+        .reduce((acc, identifier) => {
+            // make sure we don't have duplicate links
+            const url = identifier.url ?? identifier.subjectOf?.url;
+            if (!url) return acc;
+            const domain = new URL(url).hostname.replace("www.", "");
+            if (
+                acc.some(i => {
+                    const iUrl = i.url ?? i.subjectOf?.url;
+                    if (!iUrl) return false;
+                    const iDomain = new URL(iUrl).hostname.replace("www.", "");
+                    return iDomain === domain;
+                })
+            ) {
+                return acc;
+            }
+            acc.push(identifier);
+            return acc;
+        }, [] as Identifier[]);
 
     return (
         <>
