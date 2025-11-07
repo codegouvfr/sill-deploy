@@ -86,6 +86,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Helm
         uses: azure/setup-helm@v4
+      - name: Build Helm chart dependencies
+        run: |
+          helm dependency build helm-charts/catalogi
       - name: Package Helm chart
         run: |
           helm package helm-charts/catalogi
@@ -102,6 +105,8 @@ jobs:
   publish_helm_index:
     name: Publish Helm chart index
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs:
       - check_if_version_upgraded
       - create_github_release
