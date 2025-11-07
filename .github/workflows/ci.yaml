@@ -114,8 +114,16 @@ jobs:
     env:
       TO_VERSION: ${{ needs.check_if_version_upgraded.outputs.to_version }}
     steps:
+      - name: Generate GitHub App token
+        id: generate_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.RELEASE_APP_ID }}
+          private_key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
       - name: Install Helm
         uses: azure/setup-helm@v4
       - name: Create charts directory
