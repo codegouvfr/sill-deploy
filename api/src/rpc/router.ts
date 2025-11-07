@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 import { initTRPC, TRPCError } from "@trpc/server";
-import * as fs from "fs";
-import { join as pathJoin } from "path";
 import superjson from "superjson";
 import type { Equals, ReturnType } from "tsafe";
 import { assert } from "tsafe/assert";
@@ -21,7 +19,7 @@ import {
     SoftwareType,
     UserWithId
 } from "../core/usecases/readWriteSillData";
-import { getMonorepoRootPackageJson } from "../tools/getMonorepoRootPackageJson";
+import { projectVersion } from "../tools/projectVersion";
 import type { OptionalIfCanBeUndefined } from "../tools/OptionalIfCanBeUndefined";
 import type { Context } from "./context";
 import type { OidcParams } from "../core/usecases/auth/oidcClient";
@@ -87,15 +85,7 @@ export function createRouter(params: {
         // PUBLIC PROCEDURES
         "getRedirectUrl": loggedProcedure.query(() => redirectUrl),
         "getExternalSoftwareDataOrigin": loggedProcedure.query(async () => (await dbApi.source.getMainSource()).kind),
-        "getApiVersion": loggedProcedure.query(
-            (() => {
-                const out: string = JSON.parse(
-                    fs.readFileSync(pathJoin(getMonorepoRootPackageJson(), "package.json")).toString("utf8")
-                )["version"];
-
-                return () => out;
-            })()
-        ),
+        "getApiVersion": loggedProcedure.query(() => projectVersion),
         "getOidcManageProfileUrl": loggedProcedure.query(() => oidcParams.manageProfileUrl),
         "getUiConfig": loggedProcedure.query(async () => ({
             uiConfig,

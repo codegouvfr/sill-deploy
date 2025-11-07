@@ -4,6 +4,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { join as pathJoin } from "path";
 
 function getProjectRootRec(dirPath: string): string {
     if (fs.existsSync(path.join(dirPath, "package.json"))) {
@@ -16,7 +17,7 @@ function getProjectRootRec(dirPath: string): string {
 }
 
 let monorepoRoot: string | undefined = undefined;
-export function getMonorepoRootPackageJson(): string {
+function getMonorepoRootPackageJson(): string {
     if (monorepoRoot !== undefined) {
         return monorepoRoot;
     }
@@ -30,3 +31,7 @@ export function getMonorepoRootPackageJson(): string {
 
     return monorepoRoot;
 }
+
+export const projectVersion: string = JSON.parse(
+    fs.readFileSync(pathJoin(getMonorepoRootPackageJson(), "package.json")).toString("utf8")
+)["version"];
