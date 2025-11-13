@@ -18,10 +18,7 @@ if (import.meta.env.SENTRY_DSN_WEB) {
         release: projectVersion,
         sendDefaultPii: true,
         tracesSampleRate: 1.0,
-        integrations: [
-            Sentry.browserTracingIntegration({ nam }),
-            Sentry.replayIntegration()
-        ],
+        integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
         replaysSessionSampleRate: 0.01,
         replaysOnErrorSampleRate: 1.0
     });
