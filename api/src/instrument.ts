@@ -14,4 +14,7 @@ if (env.sentryDsnApi) {
         tracesSampleRate: 1.0,
         sendDefaultPii: true
     });
+    console.info(`Sentry initialized (environment: ${env.environment}, release: ${projectVersion})`);
+} else {
+    console.info(`Sentry not initialized - no DSN configured (environment: ${env.environment})`);
 }

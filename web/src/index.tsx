@@ -17,10 +17,21 @@ if (import.meta.env.SENTRY_DSN_WEB) {
         environment: import.meta.env.ENVIRONMENT,
         release: projectVersion,
         sendDefaultPii: true,
-        integrations: [Sentry.replayIntegration()],
+        tracesSampleRate: 1.0,
+        integrations: [
+            Sentry.browserTracingIntegration({ nam }),
+            Sentry.replayIntegration()
+        ],
         replaysSessionSampleRate: 0.01,
         replaysOnErrorSampleRate: 1.0
     });
+    console.info(
+        `Sentry initialized (environment: ${import.meta.env.ENVIRONMENT}, release: ${projectVersion})`
+    );
+} else {
+    console.info(
+        `Sentry not initialized - no DSN configured (environment: ${import.meta.env.ENVIRONMENT})`
+    );
 }
 
 startReactDsfr({ defaultColorScheme: "system" });
