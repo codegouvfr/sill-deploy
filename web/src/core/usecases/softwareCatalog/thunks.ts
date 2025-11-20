@@ -312,24 +312,14 @@ function apiSoftwareToInternalSoftware(params: {
 const { filterBySearchMemoized } = (() => {
     const getFlexSearch = memoize(
         (softwares: State.Software.Internal[]) => {
-            const index = new FlexSearch.Document<State.Software.Internal>({
+            const index = new FlexSearch.Document({
                 document: {
                     id: "softwareName",
                     field: ["search"]
                 },
                 cache: 100,
                 tokenize: "full",
-                charset: {
-                    split: /\s+/,
-                    rtl: false,
-                    encode: (str: string): string[] => {
-                        const normalized = str
-                            .normalize("NFD")
-                            .replace(/[\u0300-\u036f]/g, "")
-                            .toLowerCase();
-                        return [normalized];
-                    }
-                },
+                encoder: "Default",
                 context: {
                     resolution: 9,
                     depth: 2,
@@ -337,7 +327,16 @@ const { filterBySearchMemoized } = (() => {
                 }
             });
 
-            softwares.forEach(software => index.add(software));
+            softwares.forEach(
+                ({
+                    logoUrl,
+                    latestVersion,
+                    userDeclaration,
+                    referencePublications,
+                    customAttributes,
+                    ...software
+                }) => index.add(software)
+            );
 
             return index;
         },
@@ -376,7 +375,6 @@ const { filterBySearchMemoized } = (() => {
             const index = getFlexSearch(softwares);
 
             const searchResult = await index.searchAsync(search, {
-                bool: "or",
                 suggest: true,
                 enrich: true
             });
