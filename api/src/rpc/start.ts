@@ -8,6 +8,7 @@ import compression from "compression";
 import cors from "cors";
 import express, { Handler } from "express";
 import cookieParser from "cookie-parser";
+import memoize from "memoizee";
 import { Kysely } from "kysely";
 import { basename as pathBasename } from "path";
 import type { Equals } from "tsafe";
@@ -25,18 +26,23 @@ import { z } from "zod";
 import { env } from "../env";
 import type { OidcParams } from "../core/usecases/auth/oidcClient";
 
-const makeGetCatalogiJson =
-    (redirectUrl: string | undefined, dbApi: DbApiV2): Handler =>
-    async (req, res) => {
+const makeGetCatalogiJson = (redirectUrl: string | undefined, dbApi: DbApiV2): Handler => {
+    const getMemoizedCompiledData = memoize(() => dbApi.getCompiledDataPrivate(), {
+        promise: true,
+        maxAge: 2 * 60 * 60 * 1000 // 2 hours
+    });
+
+    return async (req, res) => {
         if (redirectUrl !== undefined) {
             return res.redirect(redirectUrl + req.originalUrl);
         }
 
-        const privateCompiledData = await dbApi.getCompiledDataPrivate();
+        const privateCompiledData = await getMemoizedCompiledData();
         const compiledDataPublicJson = JSON.stringify(compiledDataPrivateToPublic(privateCompiledData));
 
         res.setHeader("Content-Type", "application/json").send(Buffer.from(compiledDataPublicJson, "utf8"));
     };
+};
 
 export async function startRpcService(params: {
     oidcParams: OidcParams & { manageProfileUrl: string };
@@ -75,6 +81,8 @@ export async function startRpcService(params: {
         redirectUrl,
         uiConfig
     });
+
+    const catalogiJsonHandler = makeGetCatalogiJson(redirectUrl, dbApi);
 
     const app = express();
 
@@ -172,9 +180,9 @@ export async function startRpcService(params: {
                     .json({ message: `No translations found for language : ${lang}`, error: error.message });
             }
         })
-        .get(`*/catalogi.json`, makeGetCatalogiJson(redirectUrl, dbApi))
+        .get(`*/catalogi.json`, catalogiJsonHandler)
         // the following is just for backward compatibility
-        .get(`*/sill.json`, makeGetCatalogiJson(redirectUrl, dbApi))
+        .get(`*/sill.json`, catalogiJsonHandler)
         .use(
             (() => {
                 const trpcMiddleware = trpcExpress.createExpressMiddleware({
