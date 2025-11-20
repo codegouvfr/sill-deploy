@@ -66,14 +66,14 @@ export const makeGetPopulatedSoftwareItem: MakeGetPopulatedSoftwareItem = (dbApi
                         if (!software) return undefined;
 
                         return {
-                            registered: true,
+                            registered: software.dereferencing === undefined,
                             softwareId: software.id,
                             softwareName: software.name,
                             softwareDescription: software.description,
                             externalId: "", //TODO Remove,
                             label: software.name,
                             description: software.description,
-                            isLibreSoftware: true, // TODO this is only true for SILL, we should have this info store in softwares table
+                            isLibreSoftware: software.dereferencing === undefined,
                             sourceSlug: "" // TODO Remove
                         };
                     }
