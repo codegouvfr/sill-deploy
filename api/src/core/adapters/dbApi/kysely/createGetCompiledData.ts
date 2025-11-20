@@ -35,7 +35,7 @@ export const createGetCompiledData = (db: Kysely<Database>) => async (): Promise
             "softwares__similar_software_external_datas.similarExternalId",
             "similarExt.externalId"
         )
-        .groupBy(["s.id", "ext.externalId"])
+        .groupBy(["s.id", "ext.externalId", "ext.sourceSlug"])
         .select([
             "s.id",
             "s.addedByUserId",

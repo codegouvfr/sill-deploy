@@ -14,8 +14,6 @@ import { createPgDialect } from "./kysely.dialect";
 import { makeCreateSofware } from "../../../usecases/createSoftware";
 import { identifersUtils } from "../../../../tools/identifiersTools";
 import { makeGetPopulatedSoftware } from "../../../usecases/getPopulatedSoftware";
-// import * as fs from "node:fs";
-// import { compiledDataPrivateToPublic } from "../../../ports/CompileData";
 
 const externalIdForSource = "external-id-111";
 
@@ -115,6 +113,36 @@ const insertedUser = {
 
 const db = new Kysely<Database>({ dialect: createPgDialect(testPgUrl) });
 
+// describe("getCompiledDataPrivate", () => {
+//     it("gets private compiled data", async () => {
+//         const fs = await import("node:fs");
+//         const { compiledDataPrivateToPublic } = await import("../../../ports/CompileData");
+
+//         const dbApi = createKyselyPgDbApi(db);
+
+//         const compiledDataPrivate = await dbApi.getCompiledDataPrivate();
+//         console.log("compiledDataPrivate.length : ", compiledDataPrivate.length);
+//         // write softwares to file
+//         const publicCompiledData = compiledDataPrivateToPublic(compiledDataPrivate);
+//         publicCompiledData.sort((a, b) => (a.id >= b.id ? 1 : -1));
+//         const data = JSON.stringify(publicCompiledData, null, 2);
+//         fs.writeFileSync("./my-ordered-from-db.json", data);
+
+//         console.log("publicCompiledData", JSON.stringify(publicCompiledData, null, 2));
+
+//         expect(compiledDataPrivate.length > 0).toBe(true);
+//         const { users, referents, instances, ...firstSoftware } = compiledDataPrivate.find(s => s.id === 618)!;
+//         console.log(firstSoftware);
+//         //
+//         console.log(`Users n = ${users?.length} : `, users);
+//         console.log(`Referents n = ${referents?.length} : `, referents);
+//         console.log(`Instances n = ${instances?.length} : `, instances);
+
+//         console.log("Compiled data private length : ", compiledDataPrivate.length);
+//         expect(compiledDataPrivate.length).toBeGreaterThan(1000);
+//     }, { timeout: 10_000 });
+// });
+
 describe("pgDbApi", () => {
     let dbApi: DbApiV2;
 
@@ -125,29 +153,6 @@ describe("pgDbApi", () => {
 
     afterEach(() => {
         console.log("------  END OF TEST ------");
-    });
-
-    describe("getCompiledDataPrivate", () => {
-        it("gets private compiled data", async () => {
-            // const compiledDataPrivate = await dbApi.getCompiledDataPrivate();
-            // console.log("compiledDataPrivate.length : ", compiledDataPrivate.length);
-            // // write softwares to file
-            // const publicCompiledData = compiledDataPrivateToPublic(compiledDataPrivate);
-            // publicCompiledData.sort((a, b) => (a.id >= b.id ? 1 : -1));
-            // const data = JSON.stringify(publicCompiledData, null, 2);
-            // fs.writeFileSync("./my-ordered-from-db.json", data);
-            //
-            // console.log("publicCompiledData", JSON.stringify(publicCompiledData, null, 2));
-            //
-            // expect(compiledDataPrivate.length > 0).toBe(true);
-            // const { users, referents, instances, ...firstSoftware } = compiledDataPrivate.find(s => s.id === 42)!;
-            // console.log(firstSoftware);
-            // //
-            // console.log(`Users n = ${users?.length} : `, users);
-            // console.log(`Referents n = ${referents?.length} : `, referents);
-            // console.log(`Instances n = ${instances?.length} : `, instances);
-            // expect(compiledDataPrivate).toHaveLength(100);
-        });
     });
 
     describe("software", () => {
