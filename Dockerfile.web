@@ -11,7 +11,7 @@ COPY web/package.json web/
 COPY web/public/ web/public/
 COPY web/index.html web/
 
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --ignore-scripts
 
 COPY turbo.json ./
 COPY api/ api/

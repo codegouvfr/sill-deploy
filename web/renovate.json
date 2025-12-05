@@ -9,7 +9,7 @@
     "branchPrefix": "renovate_",
     "minimumReleaseAge": "7 days",
     "vulnerabilityAlerts": {
-        "enabled": false
+        "enabled": true
     },
     "packageRules": [
         {

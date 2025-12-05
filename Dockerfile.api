@@ -13,7 +13,7 @@ COPY package.json yarn.lock ./
 COPY api/package.json api/
 COPY api/update-then-wait.sh api/
 
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --ignore-scripts
 
 COPY turbo.json ./
 COPY api/ api/
