@@ -13,7 +13,7 @@
         "dev": "yarn build && yarn start",
         "generate-translation-schema": "node scripts/generate-translation-schema.js",
         "build": "tsc && cp -r src/customization dist/src/",
-        "start": "yarn db:up && dotenv -e ../.env -- node dist/src/entrypoints/start-api.js",
+        "start": "yarn db:up --no-outdated-check && dotenv -e ../.env -- node dist/src/entrypoints/start-api.js",
         "job:import": "dotenv -e ../.env -- node dist/src/entrypoints/import.js",
         "job:import-from-inner-identifiers": "dotenv -e ../.env -- node dist/src/entrypoints/import-from-inner-identifiers.js",
         "job:import-cnll-sill-only": "dotenv -e ../.env -- node dist/src/entrypoints/import-cnll-sill-only-script.js",
