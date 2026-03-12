@@ -1,0 +1,35 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '0 7 * * *' # every day at 7 AM UTC
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync repository with upstream repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_FOR_UPSTREAM_SYNC }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/codegouvfr/catalogi.git
+          git fetch upstream
+
+      - name: Sync with upstream/main
+        run: |
+          git checkout main
+          git rebase upstream/main
+
+      - name: Push to origin
+        run: git push origin main --force-with-lease --no-verify
