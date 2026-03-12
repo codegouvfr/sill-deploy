@@ -1,0 +1,64 @@
+name: Deploy to Server
+
+on:
+  workflow_call:
+    inputs:
+      server_host:
+        description: 'Server hostname or IP address'
+        required: true
+        type: string
+      server_user:
+        description: 'SSH user'
+        required: true
+        type: string
+      deploy_script_path:
+        description: 'Deployment script path on remote server (e.g., ./update-sill-preprod.sh)'
+        required: true
+        type: string
+      server_ssh_key_path:
+        description: 'Path to SSH key on remote server for GitHub access (e.g., ~/.ssh/sill-data)'
+        required: false
+        type: string
+        default: '~/.ssh/sill-data'
+      environment_name:
+        description: 'Environment name for display purposes'
+        required: true
+        type: string
+      version:
+        description: 'Version to deploy (with v prefix)'
+        required: true
+        type: string
+      github_environment:
+        description: 'GitHub environment for approvals (optional)'
+        required: false
+        type: string
+    secrets:
+      SSH_PRIVATE_KEY:
+        required: true
+
+jobs:
+  deploy:
+    name: "Deploy to ${{ inputs.environment_name }}"
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.github_environment }}
+    concurrency:
+      group: deploy-to-${{ inputs.environment_name }}
+      cancel-in-progress: true
+    steps:
+      - run: echo "${{ inputs.version }} - Triggering ${{ inputs.environment_name }} deploy"
+      - name: Set up SSH, trigger deployment script
+        timeout-minutes: 10
+        run: |
+          set -e
+          set -o pipefail
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan ${{ inputs.server_host }} >> ~/.ssh/known_hosts
+
+          echo "Connecting to ${{ inputs.server_host }} and running deployment script..."
+          ssh ${{ inputs.server_user }}@${{ inputs.server_host }} "bash -c 'set -e && eval \"\$(ssh-agent -s)\" && ssh-add ${{ inputs.server_ssh_key_path }} && ${{ inputs.deploy_script_path }} ${{ inputs.version }}'" 2>&1 | tee deploy.log
+
+          echo "✅ ${{ inputs.environment_name }} deployment completed successfully"
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
