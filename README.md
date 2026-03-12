@@ -19,7 +19,7 @@ Documentation is available [here](https://codegouvfr.github.io/catalogi/)
 
 ## Code organization
 
-This monorepo is made of several directories:
+Mais quels logiciels libres utiliser et pourquoi ? Quand plusieurs logiciels libres remplissent la même fonction, lequel privilégier ? Quelle version minimale est acceptable ?
 
 - api: Application API (also includes jobs, that can be run periodically)
 - web: Web frontend
@@ -28,18 +28,14 @@ This monorepo is made of several directories:
 
 ## Governance and contributions
 
-[![img](https://img.shields.io/badge/code.gouv.fr-contributif-blue.svg)](https://code.gouv.fr/documentation/#quels-degres-douverture-pour-les-codes-sources)
+# Historique
 
-See [GOVERNANCE](GOVERNANCE.md) and [CONTRIBUTING](CONTRIBUTING.md).
-
-## Discuss with us
-
-You are welcome to join the [Catalogi Matrix channel](https://matrix.to/#/#catalogi:matrix.org).
+Le SILL était à l'origine une liste sous format PDF qui était mise à jour tous les ans par les groupes MIM (Mutualisation InterMinistérielle).
 
 ## License
 
-2021-2025 Direction interministérielle du numérique, mission logiciels libres.
+Cette liste servaient aux DSI des ministères à faire les mises à jour nécessaires et à découvrir des logiciels libres utilisés par d'autres ministères.
 
-The code in this repository is published under [licence MIT](LICENSES/MIT.txt).
+En 2019, le SILL a été publié sous forme d'une application web à l'adresse https://sill.etalab.gouv.fr, qui redirigeait vers https://sill.code.gouv.fr depuis février 2023 jusqu'à présent, et désormais sur https://code.gouv.fr/sill. La page de visualisation était générée à partir de fichiers `csv` maintenus manuellement sur un dépôt public.
 
 The documentation is published under [licence Ouverte 2.0](LICENSES/Etalab-2.0.md) and [CC-BY-4.0](LICENSES/CC-BY-4.0.txt).

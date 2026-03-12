@@ -1,0 +1,11 @@
+services:
+  api:
+    volumes:
+      - ./customization/ui-config.json:/app/api/dist/src/customization/ui-config.json:ro
+      - ./customization/translations/fr.json:/app/api/dist/src/customization/translations/fr.json:ro
+      - ./customization/translations/en.json:/app/api/dist/src/customization/translations/en.json:ro
+  update:
+    volumes:
+      - ./customization/ui-config.json:/app/api/dist/src/customization/ui-config.json:ro
+      - ./customization/translations/fr.json:/app/api/dist/src/customization/translations/fr.json:ro
+      - ./customization/translations/en.json:/app/api/dist/src/customization/translations/en.json:ro
