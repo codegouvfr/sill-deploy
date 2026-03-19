@@ -111,6 +111,12 @@ export type SoftwareFormData = {
     image: string | undefined;
     keywords: string[];
     customAttributes: CustomAttributes | undefined;
+    isLibreSoftware?: boolean | undefined;
+    url?: string | undefined;
+    codeRepositoryUrl?: string | undefined;
+    softwareHelp?: string | undefined;
+    latestVersion?: { version: string | undefined; releaseDate: string | undefined } | undefined;
+    programmingLanguages?: string[] | undefined;
 };
 
 export type DeclarationFormData = DeclarationFormData.User | DeclarationFormData.Referent;

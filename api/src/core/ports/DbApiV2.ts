@@ -36,6 +36,12 @@ export type SoftwareExtrinsicRow = Pick<
     | "applicationCategories"
     | "keywords"
     | "addedByUserId"
+    | "isLibreSoftware"
+    | "url"
+    | "codeRepositoryUrl"
+    | "softwareHelp"
+    | "latestVersion"
+    | "programmingLanguages"
 >;
 
 export namespace DatabaseDataType {

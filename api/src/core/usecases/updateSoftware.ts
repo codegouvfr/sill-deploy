@@ -30,7 +30,18 @@ export const makeUpdateSoftware: (dbApi: DbApiV2) => UpdateSoftware =
                 runtimePlatforms: formFields.runtimePlatforms,
                 applicationCategories: [],
                 addedByUserId: userId,
-                keywords: formFields.keywords
+                keywords: formFields.keywords,
+                isLibreSoftware: formFields.isLibreSoftware,
+                url: formFields.url,
+                codeRepositoryUrl: formFields.codeRepositoryUrl,
+                softwareHelp: formFields.softwareHelp,
+                latestVersion: formFields.latestVersion
+                    ? {
+                          version: formFields.latestVersion.version ?? null,
+                          releaseDate: formFields.latestVersion.releaseDate ?? null
+                      }
+                    : undefined,
+                programmingLanguages: formFields.programmingLanguages
             },
             softwareId
         });

@@ -212,6 +212,12 @@ type SoftwaresTable = {
     addedByUserId: number;
     image: string | null;
     keywords: JSONColumnType<string[]>;
+    isLibreSoftware: boolean | null;
+    url: string | null;
+    codeRepositoryUrl: string | null;
+    softwareHelp: string | null;
+    latestVersion: JSONColumnType<{ version: string | null; releaseDate: string | null }> | null;
+    programmingLanguages: JSONColumnType<string[]> | null;
 };
 
 export namespace DatabaseRowOutput {

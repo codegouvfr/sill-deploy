@@ -25,7 +25,18 @@ export const formDataToSoftwareRow = (softwareForm: SoftwareFormData, userId: nu
         applicationCategories: [],
         addedByUserId: userId,
         keywords: softwareForm.keywords,
-        customAttributes: softwareForm.customAttributes
+        customAttributes: softwareForm.customAttributes,
+        isLibreSoftware: softwareForm.isLibreSoftware,
+        url: softwareForm.url,
+        codeRepositoryUrl: softwareForm.codeRepositoryUrl,
+        softwareHelp: softwareForm.softwareHelp,
+        latestVersion: softwareForm.latestVersion
+            ? {
+                  version: softwareForm.latestVersion.version ?? null,
+                  releaseDate: softwareForm.latestVersion.releaseDate ?? null
+              }
+            : undefined,
+        programmingLanguages: softwareForm.programmingLanguages
     };
 };
 
