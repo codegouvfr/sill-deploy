@@ -55,6 +55,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./docker-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5440:5432"
     restart: unless-stopped
 
   adminer:
