@@ -102,21 +102,25 @@ Because the two layers carry **disjoint sets of directives**, they cannot block 
 A safe baseline for `VITE_CSP` is shipped in `web/.env.declaration`:
 
 ```
-VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline'; object-src 'none';"
+VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob:; object-src 'none';"
 ```
+
+The `worker-src 'self' blob:` directive is needed because Sentry's Session Replay and Profiling features load their Web Worker from a `blob:` URL. Without this directive the worker is blocked and the relevant Sentry features silently fail; the rest of the app keeps working.
 
 If your deployment needs to load resources from third-party origins (analytics, fonts, embedded media, error monitoring, …), override `VITE_CSP` and extend the relevant directives. For example, to allow Matomo hosted on `https://stats.data.gouv.fr`:
 
 ```
-VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://stats.data.gouv.fr; object-src 'none';"
+VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://stats.data.gouv.fr; connect-src 'self' https://stats.data.gouv.fr; img-src 'self' data: https://stats.data.gouv.fr; worker-src 'self' blob:; object-src 'none';"
 ```
+
+Note the three Matomo-related directives: `script-src` for `matomo.js`, `connect-src` for the tracking pixel POST, and `img-src` for the no-JS fallback `<img>` tracker.
 
 A few things to know:
 
 - **CSPs from multiple sources are intersected, not unioned.** You cannot loosen a CSP by adding a second, more permissive one — the browser keeps the strictest set of rules across all of them. The two layers shipped here (nginx header + `VITE_CSP` meta) are designed around this rule by carrying disjoint directive sets, so the intersection is effectively the union of their directives.
 - **Quoting is intentionally simple.** CSP source-list keywords (`'self'`, `'unsafe-inline'`, `'unsafe-eval'`, `'none'`, …) are required by the CSP spec to be single-quoted. The injection chain — env-file → `vite-envs` → `<meta content="...">` — keeps double quotes on the outside at every level, so the literal single quotes inside `VITE_CSP` flow through unchanged. No escaping, no HTML entities.
 - **Why a dedicated env var rather than putting the meta in `VITE_HEAD`.** `vite-envs` substitutes placeholders via `awk gsub`, which interprets `&` in the replacement string as a backreference to the matched text. That means HTML entities like `&apos;` are silently corrupted if they appear inside `VITE_HEAD`. Splitting CSP out into its own variable sidesteps the entire quoting problem and keeps the placeholder content free of `&`.
-- **Sentry / `connect-src`.** When wiring up Sentry (see the `VITE_ENVIRONMENT` section above), `VITE_CSP` will need to allow `*.sentry.io` in `script-src` and `connect-src`. The default policy does not set `default-src`, so `connect-src` falls back to `*` — which is fine until a `default-src` is introduced.
+- **Sentry / `connect-src` / `worker-src`.** When wiring up Sentry (see the `VITE_ENVIRONMENT` section above), `VITE_CSP` will need to allow your Sentry host in `script-src` and `connect-src`, and the baseline already includes `worker-src 'self' blob:` for Sentry's Session Replay and Profiling workers. The default policy does not set `default-src`, so `connect-src` falls back to `*` — which is fine until a `default-src` is introduced.
 
 There are also some variables that are used only for the docker-compose.resources.yml to work properly in dev env. Make sure it is aligned with the `DATABASE_URL` variable above.
 
