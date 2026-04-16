@@ -5,6 +5,8 @@
 import { fr } from "@codegouvfr/react-dsfr";
 import { tss } from "tss-react";
 import { useTranslation } from "react-i18next";
+import { osValues } from "api";
+import { osLabels } from "./osLabels";
 
 type Props = {
     title?: string;
@@ -31,40 +33,24 @@ export function OperatingSystemsTable(props: Props) {
                             </caption>
                             <thead>
                                 <tr>
-                                    <th scope="col" style={{ textAlign: "center" }}>
-                                        Windows
-                                    </th>
-                                    <th scope="col" style={{ textAlign: "center" }}>
-                                        Linux
-                                    </th>
-                                    <th scope="col" style={{ textAlign: "center" }}>
-                                        Mac
-                                    </th>
-                                    <th scope="col" style={{ textAlign: "center" }}>
-                                        iOS
-                                    </th>
-                                    <th scope="col" style={{ textAlign: "center" }}>
-                                        Android
-                                    </th>
+                                    {osValues.map(os => (
+                                        <th
+                                            key={os}
+                                            scope="col"
+                                            style={{ textAlign: "center" }}
+                                        >
+                                            {osLabels[os]}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr id="table-sm-row-key-1" data-row-key="1">
-                                    <td style={{ textAlign: "center" }}>
-                                        {operatingSystems.windows ? "✅" : "❌"}
-                                    </td>
-                                    <td style={{ textAlign: "center" }}>
-                                        {operatingSystems.linux ? "✅" : "❌"}
-                                    </td>
-                                    <td style={{ textAlign: "center" }}>
-                                        {operatingSystems.mac ? "✅" : "❌"}
-                                    </td>
-                                    <td style={{ textAlign: "center" }}>
-                                        {operatingSystems.ios ? "✅" : "❌"}
-                                    </td>
-                                    <td style={{ textAlign: "center" }}>
-                                        {operatingSystems.android ? "✅" : "❌"}
-                                    </td>
+                                    {osValues.map(os => (
+                                        <td key={os} style={{ textAlign: "center" }}>
+                                            {operatingSystems[os] ? "✅" : "❌"}
+                                        </td>
+                                    ))}
                                 </tr>
                             </tbody>
                         </table>

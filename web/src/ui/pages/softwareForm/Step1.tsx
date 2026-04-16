@@ -11,6 +11,8 @@ import { assert } from "tsafe/assert";
 import { Checkbox } from "@codegouvfr/react-dsfr/Checkbox";
 import type { FormData } from "core/usecases/softwareForm";
 import { useTranslation } from "react-i18next";
+import { osValues } from "api";
+import { osLabels } from "ui/shared/osLabels";
 
 export type Step1Props = {
     className?: string;
@@ -137,43 +139,13 @@ export function SoftwareFormStep1(props: Step1Props) {
                     legend={t("softwareFormStep1.checkbox legend")}
                     state={errors.osCheckboxValues !== undefined ? "error" : undefined}
                     stateRelatedMessage={t("app.required")}
-                    options={[
-                        {
-                            label: "Windows",
-                            nativeInputProps: {
-                                ...register("osCheckboxValues", { required: true }),
-                                value: "windows"
-                            }
-                        },
-                        {
-                            label: "GNU/Linux",
-                            nativeInputProps: {
-                                ...register("osCheckboxValues", { required: true }),
-                                value: "linux"
-                            }
-                        },
-                        {
-                            label: "MacOS",
-                            nativeInputProps: {
-                                ...register("osCheckboxValues", { required: true }),
-                                value: "mac"
-                            }
-                        },
-                        {
-                            label: "Android",
-                            nativeInputProps: {
-                                ...register("osCheckboxValues", { required: true }),
-                                value: "android"
-                            }
-                        },
-                        {
-                            label: "iOS (iPhone)",
-                            nativeInputProps: {
-                                ...register("osCheckboxValues", { required: true }),
-                                value: "ios"
-                            }
+                    options={osValues.map(os => ({
+                        label: osLabels[os],
+                        nativeInputProps: {
+                            ...register("osCheckboxValues", { required: true }),
+                            value: os
                         }
-                    ]}
+                    }))}
                 />
             )}
             <button

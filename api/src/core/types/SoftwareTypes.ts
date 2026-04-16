@@ -13,7 +13,9 @@ import type {
 import type { CustomAttributes } from "../usecases/readWriteSillData/attributeTypes";
 import type { Instance } from "../usecases/readWriteSillData/types";
 
-export type Os = "windows" | "linux" | "mac" | "android" | "ios";
+export const osValues = ["windows", "linux", "mac", "android", "ios"] as const;
+
+export type Os = (typeof osValues)[number];
 
 export type RuntimePlatform = "cloud" | "mobile" | "desktop";
 

@@ -309,7 +309,8 @@
         "organization": "Organization",
         "is user of": "Is user of",
         "is referent of": "Is referent of",
-        "use case": "Use case"
+        "use case": "Use case",
+        "os": "Operating system"
     },
     "declarationForm": {
         "catalog breadcrumb": "Software catalog",

@@ -316,7 +316,8 @@
         "organization": "Organisation",
         "is user of": "Est utilisateur de",
         "is referent of": "Est référent de",
-        "use case": "Cas d'usage"
+        "use case": "Cas d'usage",
+        "os": "Système d'exploitation"
     },
     "declarationForm": {
         "catalog breadcrumb": "Le catalogue de logiciels",

@@ -11,6 +11,9 @@ import type { FormData } from "core/usecases/declarationForm";
 import { Input } from "@codegouvfr/react-dsfr/Input";
 import { Select } from "@codegouvfr/react-dsfr/Select";
 import { useTranslation } from "react-i18next";
+import type { Os } from "api";
+import { osValues } from "api";
+import { osLabels } from "ui/shared/osLabels";
 
 type Props = {
     className?: string;
@@ -28,7 +31,7 @@ export function DeclarationFormStep2User(props: Props) {
         formState: { errors }
     } = useForm<{
         usecaseDescription: string;
-        osSelectValue: "windows" | "linux" | "mac" | "";
+        osSelectValue: Os | "";
         version: string;
         serviceUrlInputValue: string;
     }>({
@@ -89,9 +92,11 @@ export function DeclarationFormStep2User(props: Props) {
                     stateRelatedMessage={t("app.required")}
                 >
                     <option value="" disabled hidden />
-                    <option value="windows">Windows</option>
-                    <option value="linux">GNU/Linux</option>
-                    <option value="mac">MacOS</option>
+                    {osValues.map(os => (
+                        <option key={os} value={os}>
+                            {osLabels[os]}
+                        </option>
+                    ))}
                 </Select>
             )}
             <Input

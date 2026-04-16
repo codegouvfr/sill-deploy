@@ -17,3 +17,4 @@ import type * as ApiTypes from "./ApiTypes";
 export type { ApiTypes };
 
 export type { Os, RuntimePlatform } from "../core/types";
+export { osValues } from "../core/types";

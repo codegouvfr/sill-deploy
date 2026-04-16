@@ -1265,6 +1265,9 @@
                 },
                 "use case": {
                     "type": "string"
+                },
+                "os": {
+                    "type": "string"
                 }
             },
             "additionalProperties": false,
@@ -1280,7 +1283,8 @@
                 "organization",
                 "is user of",
                 "is referent of",
-                "use case"
+                "use case",
+                "os"
             ]
         },
         "declarationForm": {

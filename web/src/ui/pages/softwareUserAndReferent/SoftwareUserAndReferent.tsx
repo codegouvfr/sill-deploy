@@ -16,6 +16,7 @@ import { LoadingFallback } from "ui/shared/LoadingFallback";
 import softwareLogoPlaceholder from "ui/assets/software_logo_placeholder.png";
 import { routes, getPreviousRouteName, session } from "ui/routes";
 import { Tag } from "@codegouvfr/react-dsfr/Tag";
+import { osLabels } from "ui/shared/osLabels";
 
 export type Props = {
     className?: string;
@@ -128,7 +129,7 @@ export default function SoftwareUserAndReferent(props: Props) {
 
     const contentUsers = () => {
         return users.map((user, index) => {
-            const { organization, usecaseDescription, serviceUrl } = user;
+            const { organization, usecaseDescription, os, serviceUrl } = user;
             return (
                 <li key={index}>
                     <p>
@@ -137,6 +138,14 @@ export default function SoftwareUserAndReferent(props: Props) {
                         </span>
                         : {getOrganizationFullName(organization)}{" "}
                     </p>
+                    {os && (
+                        <p>
+                            <span className={classes.infoLegend}>
+                                {t("softwareUserAndReferent.os")}
+                            </span>
+                            : {osLabels[os]}
+                        </p>
+                    )}
                     {usecaseDescription && (
                         <p>
                             <span className={classes.infoLegend}>

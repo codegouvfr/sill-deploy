@@ -3,3 +3,4 @@
 // SPDX-License-Identifier: MIT
 
 export type { Os, RuntimePlatform, SimilarSoftware, Software } from "./SoftwareTypes";
+export { osValues } from "./SoftwareTypes";
