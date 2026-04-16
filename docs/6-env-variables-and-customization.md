@@ -102,18 +102,18 @@ Because the two layers carry **disjoint sets of directives**, they cannot block 
 A safe baseline for `VITE_CSP` is shipped in `web/.env.declaration`:
 
 ```
-VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' data: https:; object-src 'none';"
+VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' data: http: https:; object-src 'none';"
 ```
 
 Two non-obvious directives in the baseline:
 
-- **`img-src 'self' data: https:`** — the catalogue displays software logos sourced from arbitrary upstream origins (Wikimedia Commons, project homepages, GitHub avatars, …). Pinning `img-src` to a specific allowlist would break logos every time a new software entry points at a host you didn't anticipate. The baseline allows any HTTPS image source, plus `data:` URIs for inline icons. HTTP is excluded on purpose — there's no reason to ship HTTP images in 2026, and CSP gives us that for free.
+- **`img-src 'self' data: http: https:`** — the catalogue displays software logos sourced from arbitrary upstream origins (Wikimedia Commons, project homepages, GitHub avatars, …). Pinning `img-src` to a specific allowlist would break logos every time a new software entry points at a host you didn't anticipate. The baseline allows any image source over HTTP or HTTPS, plus `data:` URIs for inline icons. Some upstream sources (notably Wikidata-scraped thumbnail URLs) may serve images over plain HTTP or protocol-relative URLs, so both schemes are allowed.
 - **`worker-src 'self' blob:`** — Sentry's Session Replay and Profiling features load their Web Worker from a `blob:` URL. Without this directive the worker is blocked and the relevant Sentry features silently fail; the rest of the app keeps working.
 
 If your deployment needs to load resources from third-party origins (analytics, fonts, embedded media, error monitoring, …), override `VITE_CSP` and extend the relevant directives. For example, to allow Matomo hosted on `https://stats.data.gouv.fr` and Sentry on `https://sentry.example.org`:
 
 ```
-VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://stats.data.gouv.fr; connect-src 'self' https://stats.data.gouv.fr https://sentry.example.org; img-src 'self' data: https:; worker-src 'self' blob:; object-src 'none';"
+VITE_CSP="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://stats.data.gouv.fr; connect-src 'self' https://stats.data.gouv.fr https://sentry.example.org; img-src 'self' data: http: https:; worker-src 'self' blob:; object-src 'none';"
 ```
 
 `script-src` carries the Matomo host so `matomo.js` can load. `connect-src` carries the Matomo host (for the tracking pixel POST) and the Sentry host (for envelope POSTs). `img-src` keeps the permissive baseline so software logos from arbitrary upstream origins keep working — including the Matomo no-JS fallback `<img>` tracker, which is just another HTTPS image.
