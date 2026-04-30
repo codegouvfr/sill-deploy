@@ -47,10 +47,11 @@ export async function up(db: Kysely<any>): Promise<void> {
         .alterColumn("description", col => col.dropNotNull())
         .execute();
 
-    // 3. Backfill: for every existing software, create a UserInput row containing ONLY the
-    // fields where the software's value differs from the best external source (lowest priority).
-    // Fields that match the external source are set to NULL so the external data shows through
-    // during merge (first-wins semantics). This ensures UserInput only overrides user edits.
+    // 3. Backfill: for every existing software, create a UserInput row containing the FULL
+    // legacy values from the `softwares` table. This represents what the user would have seen
+    // (and edited) in the legacy software_form: a complete snapshot of the last submission.
+    // Operators can later NULL out individual fields where the legacy value matches what an
+    // external source provides, to let the external data show through via merge fallthrough.
     //
     // The `externalId` column is part of the primary key on `software_external_datas`, so it
     // can't be NULL — we use `softwareId::text` as a stable sentinel that's unique per software
@@ -68,33 +69,23 @@ export async function up(db: Kysely<any>): Promise<void> {
         SELECT
             s.id::text, 'UserInput', s.id,
             '[]'::jsonb,
-            -- ext.name may be a full LocalizedString like {"en":"...","fr":"..."}, so we
-            -- compare only the 'fr' key to detect actual user edits.
-            CASE WHEN s.name IS DISTINCT FROM (ext.name::jsonb ->> 'fr') THEN jsonb_build_object('fr', s.name) ELSE NULL END,
-            CASE WHEN (s.description::jsonb ->> 'fr') IS DISTINCT FROM (ext.description::jsonb ->> 'fr') THEN s.description ELSE NULL END,
-            CASE WHEN s."isLibreSoftware" IS DISTINCT FROM ext."isLibreSoftware" THEN s."isLibreSoftware" ELSE NULL END,
-            CASE WHEN s.image IS DISTINCT FROM ext.image THEN s.image ELSE NULL END,
-            CASE WHEN s.url IS DISTINCT FROM ext.url THEN s.url ELSE NULL END,
-            CASE WHEN s."codeRepositoryUrl" IS DISTINCT FROM ext."codeRepositoryUrl" THEN s."codeRepositoryUrl" ELSE NULL END,
-            CASE WHEN s."softwareHelp" IS DISTINCT FROM ext."softwareHelp" THEN s."softwareHelp" ELSE NULL END,
-            CASE WHEN (ext.license IS NULL OR ext.license = '') AND s.license IS NOT NULL AND s.license != '' THEN s.license ELSE NULL END,
-            CASE WHEN s."latestVersion" IS DISTINCT FROM ext."latestVersion" THEN s."latestVersion" ELSE NULL END,
-            CASE WHEN s.keywords IS DISTINCT FROM ext.keywords THEN s.keywords ELSE NULL END,
-            CASE WHEN s."programmingLanguages" IS DISTINCT FROM ext."programmingLanguages" THEN s."programmingLanguages" ELSE NULL END,
-            CASE WHEN s."applicationCategories" IS DISTINCT FROM ext."applicationCategories" THEN s."applicationCategories" ELSE NULL END,
-            CASE WHEN s."operatingSystems" IS DISTINCT FROM ext."operatingSystems" THEN s."operatingSystems" ELSE NULL END,
-            CASE WHEN s."runtimePlatforms" IS DISTINCT FROM ext."runtimePlatforms" THEN s."runtimePlatforms" ELSE NULL END,
+            -- name on external_datas is a LocalizedString JSONB; legacy s.name is a plain string.
+            CASE WHEN s.name IS NOT NULL THEN jsonb_build_object('fr', s.name) ELSE NULL END,
+            s.description,
+            s."isLibreSoftware",
+            s.image,
+            s.url,
+            s."codeRepositoryUrl",
+            s."softwareHelp",
+            NULLIF(s.license, ''),
+            s."latestVersion",
+            s.keywords,
+            s."programmingLanguages",
+            s."applicationCategories",
+            s."operatingSystems",
+            s."runtimePlatforms",
             NOW()
         FROM softwares s
-        LEFT JOIN LATERAL (
-            SELECT sed.*
-            FROM software_external_datas sed
-            JOIN sources src ON src.slug = sed."sourceSlug"
-            WHERE sed."softwareId" = s.id
-              AND src.kind != 'UserInput'
-            ORDER BY src.priority ASC
-            LIMIT 1
-        ) ext ON true
     `.execute(db);
 
     // 4. Drop content columns from `softwares` — data now lives in `software_external_datas`.

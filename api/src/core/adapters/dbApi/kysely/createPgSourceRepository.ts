@@ -4,7 +4,7 @@
 
 import { Kysely } from "kysely";
 import { SourceRepository } from "../../../ports/DbApiV2";
-import { Database } from "./kysely.database";
+import { Database, USER_INPUT_SOURCE_SLUG } from "./kysely.database";
 import { stripNullOrUndefinedValues } from "./kysely.utils";
 
 export const createPgSourceRepository = (db: Kysely<Database>): SourceRepository => ({
@@ -22,10 +22,14 @@ export const createPgSourceRepository = (db: Kysely<Database>): SourceRepository
             .orderBy("priority", "asc")
             .executeTakeFirst()
             .then(row => (row ? stripNullOrUndefinedValues(row) : row)),
+    // UserInput is a synthetic source that participates in the merge pipeline but is not
+    // fetchable. Exclude it here so callers (e.g. getExternalSoftwareOptions) get a real
+    // gateway-backed source.
     getMainSource: async () =>
         db
             .selectFrom("sources")
             .selectAll()
+            .where("slug", "!=", USER_INPUT_SOURCE_SLUG)
             .orderBy("priority", "asc")
             .executeTakeFirstOrThrow()
             .then(row => stripNullOrUndefinedValues(row)),
