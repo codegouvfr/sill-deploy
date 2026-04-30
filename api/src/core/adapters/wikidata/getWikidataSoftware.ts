@@ -2,8 +2,6 @@
 // SPDX-FileCopyrightText: 2024-2025 Université Grenoble Alpes
 // SPDX-License-Identifier: MIT
 
-import * as cheerio from "cheerio";
-import { assert } from "tsafe/assert";
 import memoize from "memoizee";
 import { noUndefined } from "tsafe/noUndefined";
 import { allEquals } from "evt/tools/reducers/allEquals";
@@ -135,64 +133,16 @@ export const getWikidataSoftware: GetSoftwareExternal = memoize(
             "description": wikidataSingleLocalizedStringToLocalizedString(entity.descriptions) ?? {
                 "en": "No description"
             },
-            "image": await (async () => {
+            "image": (() => {
                 const value = getClaimDataValue<"string">("P154")[0];
-
-                if (value === undefined) {
-                    return undefined;
-                }
-
-                const previewUrl = encodeURI(`${source.url}/wiki/${externalId}#/media/File:${value}`);
-
-                const raw = await (async function callee(): Promise<string | undefined> {
-                    const res = await fetch(previewUrl).catch(() => undefined);
-
-                    if (res === undefined) {
-                        return undefined;
-                    }
-
-                    // Too many requests
-                    if (res.status === 429) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-
-                        return callee();
-                    }
-
-                    if (res.status !== 200) {
-                        console.error(`Request to ${previewUrl} failed with error code ${res.status}`);
-                        return undefined;
-                    }
-
-                    const raw = await res.text().catch(() => undefined);
-
-                    if (raw === undefined) {
-                        return undefined;
-                    }
-
-                    return raw;
-                })();
-
-                if (raw === undefined) {
-                    return undefined;
-                }
-
-                const $ = cheerio.load(raw);
-
-                const endOfHref =
-                    "File:" +
-                    encodeURIComponent(value)
-                        .replace(/%2C/g, ",") //Preserve ','
-                        .replace(/%20/g, "_") //Replace ' ' by '_'
-                        .replace(/'/g, "%27"); //Replace ''' by '%27'
-
-                const url = $(`a[href$="${endOfHref}"] img`).attr("src");
-
-                assert(
-                    url !== undefined,
-                    `Wikidata scrapper needs to be updated ${previewUrl} ${value}, endOfHref: ${endOfHref}`
-                );
-
-                return url;
+                if (value === undefined) return undefined;
+                // Wikimedia blocks cross-origin hotlinks to direct
+                // `upload.wikimedia.org/.../thumb/...` URLs (the shape produced
+                // by scraping the rendered wikidata HTML page). Special:FilePath
+                // is their supported redirector: it 302s to a current valid
+                // thumbnail and the browser follows transparently.
+                const filename = value.replace(/ /g, "_");
+                return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=250`;
             })(),
             ...(() => {
                 const websiteUrl = getClaimDataValue<"string">("P856")[0];
