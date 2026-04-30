@@ -93,7 +93,13 @@ export async function fetchEntity(params: {
 
     const entity = entry as WikidataEntity;
 
-    console.info(`   -> fetched wiki soft : ${entity.aliases?.en?.[0]?.value || entity.aliases?.fr?.[0]?.value}`);
+    const displayName =
+        entity.labels?.en?.value ??
+        entity.labels?.fr?.value ??
+        entity.aliases?.en?.[0]?.value ??
+        entity.aliases?.fr?.[0]?.value ??
+        entity.id;
+    console.info(`   -> fetched wiki soft : ${displayName}`);
 
     return { entity };
 }

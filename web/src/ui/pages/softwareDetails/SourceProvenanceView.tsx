@@ -120,11 +120,13 @@ export const SourceProvenanceView = memo((props: Props) => {
         [resolveLocalizedString]
     );
 
-    const renderFetchInfo = (source: ApiTypes.SoftwareSourceData) => {
+    const renderFetchInfo = (
+        source: ApiTypes.SoftwareSourceData
+    ): { text: string; title?: string } | null => {
         if (!source.lastDataFetchAt) {
             return source.kind === USER_INPUT_SOURCE_SLUG
                 ? null
-                : t("sourceProvenance.neverFetched");
+                : { text: t("sourceProvenance.neverFetched") };
         }
         const when = getFormattedDate({
             time: source.lastDataFetchAt,
@@ -132,9 +134,19 @@ export const SourceProvenanceView = memo((props: Props) => {
             doAlwaysShowYear: true,
             showTime: false
         });
-        return source.kind === USER_INPUT_SOURCE_SLUG
-            ? t("sourceProvenance.lastEditedAt", { when })
-            : t("sourceProvenance.lastFetchedAt", { when });
+        const whenWithTime = getFormattedDate({
+            time: source.lastDataFetchAt,
+            lang,
+            doAlwaysShowYear: true,
+            showTime: true
+        });
+        return {
+            text:
+                source.kind === USER_INPUT_SOURCE_SLUG
+                    ? t("sourceProvenance.lastEditedAt", { when })
+                    : t("sourceProvenance.lastFetchedAt", { when }),
+            title: whenWithTime
+        };
     };
 
     const getSourceLabel = (source: ApiTypes.SoftwareSourceData): string =>
@@ -217,8 +229,11 @@ export const SourceProvenanceView = memo((props: Props) => {
                                     >
                                         {getSourceLabel(source)}
                                         {fetchInfo && (
-                                            <div className={classes.timestamp}>
-                                                {fetchInfo}
+                                            <div
+                                                className={classes.timestamp}
+                                                title={fetchInfo.title}
+                                            >
+                                                {fetchInfo.text}
                                             </div>
                                         )}
                                     </th>

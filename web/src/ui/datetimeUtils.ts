@@ -29,7 +29,7 @@ export const { getFormattedDate } = (() => {
                 year: isSameYear ? undefined : "numeric",
                 month: "long",
                 day: "numeric",
-                timeStyle: showTime ? "short" : undefined
+                ...(showTime ? { hour: "numeric", minute: "numeric" } : {})
             }).format(date)
         );
     }

@@ -122,8 +122,7 @@ export const gitHubEndpointMaker = (params?: { auth?: string }) => {
                         repo,
                         headers: {
                             "X-GitHub-Api-Version": "2022-11-28"
-                        },
-                        direction: "desc"
+                        }
                     });
 
                     return resPull.data;
