@@ -52,7 +52,7 @@ export type FormData = {
             description: LocalizedString<Language>;
             externalId: string;
             sourceSlug: string | undefined;
-            isLibreSoftware: boolean | undefined;
+            isLibreSoftware: boolean | null;
         }[];
     };
 };

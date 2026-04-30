@@ -32,7 +32,9 @@ export type SimilarSoftware = {
     sourceSlug: string;
     name: LocalizedString;
     description: LocalizedString;
-    isLibreSoftware: boolean | undefined;
+    // null = license verification unavailable. Distinct from `false` (verified
+    // non-libre). Mirrors SoftwareExternalDataOption.isLibreSoftware semantics.
+    isLibreSoftware: boolean | null;
     isInCatalogi: boolean;
     softwareId: number | undefined;
 };

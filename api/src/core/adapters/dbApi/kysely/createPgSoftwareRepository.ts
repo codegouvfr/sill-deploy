@@ -70,7 +70,7 @@ const aggregateEnrichedSimilars = (rows: EnrichedSimilarRow[]): Record<number, S
                     sourceSlug: row.sourceSlug,
                     name: row.name,
                     description: row.description,
-                    isLibreSoftware: row.isLibreSoftware ?? undefined,
+                    isLibreSoftware: row.isLibreSoftware,
                     isInCatalogi: row.linkedSoftwareId !== null && row.linkedSoftwareDereferencing === null,
                     softwareId: row.linkedSoftwareId ?? undefined
                 }
@@ -501,7 +501,7 @@ export const createPgSoftwareRepository = (db: Kysely<Database>): SoftwareReposi
                 sourceSlug: row.sourceSlug,
                 name: row.name ?? {},
                 description: row.description ?? {},
-                isLibreSoftware: row.isLibreSoftware ?? undefined,
+                isLibreSoftware: row.isLibreSoftware,
                 isInCatalogi: row.linkedSoftwareId !== null && row.linkedSoftwareDereferencing === null,
                 softwareId: row.linkedSoftwareId ?? undefined
             }));

@@ -2,43 +2,88 @@
 // SPDX-FileCopyrightText: 2024-2025 Université Grenoble Alpes
 // SPDX-License-Identifier: MIT
 
-export const getLicenses = async (params: { wikidataIds: string[]; requestInit?: RequestInit }) => {
-    const { wikidataIds, requestInit = {} } = params;
-    const propertyId = "P275"; // license
-    const wikidataIdString = wikidataIds.map(id => "wd:" + id).join(" ");
-    const query = `SELECT ?item ?itemLabel ?license ?licenseLabel WHERE {
-        VALUES ?item { ${wikidataIdString} }
-        ?item wdt:${propertyId} ?license.
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-    }`;
-    const url = `https://query.wikidata.org/sparql?query=${encodeURIComponent(query)}&format=json`;
-    const response = await fetch(url, requestInit);
-    const data = await response.json();
+import memoize from "memoizee";
 
-    // Group the results by the Wikidata ID
-    const groupedData: Record<
+type WbgetentitiesResponse = {
+    entities?: Record<
         string,
         {
-            item: string;
-            itemLabel: string;
-            license: string;
-            licenseLabel: string;
+            id: string;
+            claims?: Record<
+                string,
+                Array<{
+                    rank?: "preferred" | "normal" | "deprecated";
+                    mainsnak?: {
+                        snaktype?: string;
+                        datavalue?: { value?: { id?: string } };
+                    };
+                }>
+            >;
         }
-    > = {};
-
-    data.results.bindings.forEach((binding: any) => {
-        const wikidataId = binding.item.value.split("/").pop();
-        if (!groupedData[wikidataId]) {
-            groupedData[wikidataId] = {
-                "item": binding.item.value,
-                "itemLabel": binding.itemLabel.value,
-                "license": binding.license.value,
-                "licenseLabel": binding.licenseLabel.value
-            };
-        }
-    });
-
-    return Object.fromEntries(
-        Object.entries(groupedData).map(([wikidataId, { license }]) => [wikidataId, license.split("/").reverse()[0]])
-    );
+    >;
 };
+
+const pickPreferredP275 = (
+    claims: NonNullable<NonNullable<WbgetentitiesResponse["entities"]>[string]["claims"]>
+): string | undefined => {
+    const statements = (claims.P275 ?? [])
+        .filter(s => s.rank !== "deprecated" && s.mainsnak?.snaktype === "value")
+        .sort((a, b) => (b.rank === "preferred" ? 1 : 0) - (a.rank === "preferred" ? 1 : 0));
+    return statements[0]?.mainsnak?.datavalue?.value?.id;
+};
+
+/**
+ * Fetch the license (P275) for a batch of wikidata entities using the same
+ * `www.wikidata.org/w/api.php` endpoint that `wbsearchentities` uses. Avoids
+ * `query.wikidata.org/sparql`, which is rate-limited and frequently returns
+ * HTML error pages on overload.
+ *
+ * Returns a map of `wikidataId -> license entity id`. Entities without a P275
+ * claim are simply absent from the map. Memoized per (sourceUrl, ids) for 2
+ * minutes — autocomplete frequently asks for the same id sets in succession.
+ */
+const fetchLicensesUncached = async (params: {
+    wikidataIds: string[];
+    sourceUrl: string;
+    requestInit?: RequestInit;
+}): Promise<Record<string, string>> => {
+    const { wikidataIds, sourceUrl, requestInit } = params;
+    if (wikidataIds.length === 0) return {};
+
+    const url = `${sourceUrl}/w/api.php?action=wbgetentities&format=json&props=claims&ids=${wikidataIds.join("|")}`;
+    // Identify ourselves so Wikidata applies a friendlier rate limit than the anonymous bucket.
+    const headers = {
+        ...((requestInit?.headers as Record<string, string> | undefined) ?? {}),
+        Accept: "application/json",
+        "User-Agent": "catalogi-sill (https://code.gouv.fr/sill)"
+    };
+    const response = await fetch(url, { ...requestInit, headers }).catch(() => undefined);
+    if (!response?.ok) {
+        console.warn(`[wikidata.getLicenses] wbgetentities failed (status=${response?.status ?? "n/a"})`);
+        return {};
+    }
+    const data = (await response.json().catch(() => undefined)) as WbgetentitiesResponse | undefined;
+    if (!data?.entities) return {};
+
+    const out: Record<string, string> = {};
+    for (const [wikidataId, entity] of Object.entries(data.entities)) {
+        if (!entity.claims) continue;
+        const licenseId = pickPreferredP275(entity.claims);
+        if (licenseId !== undefined) out[wikidataId] = licenseId;
+    }
+    return out;
+};
+
+const memoizedFetchLicenses = memoize(fetchLicensesUncached, {
+    promise: true,
+    maxAge: 120 * 1000,
+    max: 500,
+    preFetch: true,
+    normalizer: ([{ sourceUrl, wikidataIds }]) => `${sourceUrl}|${[...wikidataIds].sort().join(",")}`
+});
+
+export const getLicenses = (params: {
+    wikidataIds: string[];
+    sourceUrl: string;
+    requestInit?: RequestInit;
+}): Promise<Record<string, string>> => memoizedFetchLicenses(params);

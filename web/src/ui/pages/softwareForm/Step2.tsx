@@ -210,7 +210,7 @@ export function SoftwareFormStep2(props: Step2Props) {
                 render={({ field }) => (
                     <SearchInput
                         className={wikidataInputId}
-                        debounceDelay={400}
+                        debounceDelay={500}
                         getOptions={getLibreSoftwareWikidataOptions}
                         value={field.value}
                         onValueChange={field.onChange}

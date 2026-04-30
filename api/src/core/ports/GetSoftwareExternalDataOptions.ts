@@ -10,7 +10,11 @@ export type SoftwareExternalDataOption = {
     externalId: string;
     name: LocalizedString;
     description: LocalizedString;
-    isLibreSoftware: boolean | undefined;
+    // null = license verification unavailable (e.g. wikidata entity has no P275
+    // claim, or the upstream call failed). Distinct from `false` ("verified
+    // non-libre"). Using null (not undefined) so it survives JSON serialization
+    // and forces every construction site to handle the unknown case.
+    isLibreSoftware: boolean | null;
     sourceSlug: string;
 };
 
@@ -27,7 +31,7 @@ export const softwareExternalDataOptionSchema = z.object({
     externalId: z.string(),
     name: localizedStringSchema,
     description: localizedStringSchema,
-    isLibreSoftware: z.boolean(),
+    isLibreSoftware: z.boolean().nullable(),
     sourceSlug: z.string()
 });
 

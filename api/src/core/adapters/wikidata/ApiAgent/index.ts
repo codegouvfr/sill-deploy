@@ -11,6 +11,6 @@ export const makeWikidataAPIAgent = (source: Source) => {
     const requestInit = convertSourceConfigToRequestInit(source.configuration);
     return {
         fetchEntity: (entityId: string) => fetchEntity({ wikidataId: entityId, requestInit }),
-        getLicenses: (wikidataIds: string[]) => getLicenses({ wikidataIds, requestInit })
+        getLicenses: (wikidataIds: string[]) => getLicenses({ wikidataIds, sourceUrl: source.url, requestInit })
     };
 };

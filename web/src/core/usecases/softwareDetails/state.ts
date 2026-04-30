@@ -17,7 +17,7 @@ export namespace State {
         isInCatalogi: false;
         sourceSlug: string;
         externalId: string;
-        isLibreSoftware: boolean | undefined;
+        isLibreSoftware: boolean | null;
         name: LocalizedString;
         description: LocalizedString;
     };

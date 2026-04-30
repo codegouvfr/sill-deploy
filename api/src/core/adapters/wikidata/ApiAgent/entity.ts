@@ -17,9 +17,16 @@ export async function fetchEntity(params: {
 }): Promise<{ entity: WikidataEntity }> {
     const { wikidataId, requestInit = {} } = params;
 
-    const res = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`, requestInit).catch(
-        () => undefined
-    );
+    const headers = {
+        ...((requestInit.headers as Record<string, string> | undefined) ?? {}),
+        Accept: "application/json",
+        "User-Agent": "catalogi-sill (https://code.gouv.fr/sill)"
+    };
+
+    const res = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`, {
+        ...requestInit,
+        headers
+    }).catch(() => undefined);
 
     if (res === undefined) {
         throw new WikidataFetchError(undefined);

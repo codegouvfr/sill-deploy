@@ -78,7 +78,7 @@ export function SoftwareFormStep4(props: Step4Props) {
                 control={control}
                 render={({ field }) => (
                     <SearchMultiInput
-                        debounceDelay={400}
+                        debounceDelay={500}
                         getOptions={getExternalSoftwareOptions}
                         value={field.value}
                         onValueChange={value => field.onChange(value)}
