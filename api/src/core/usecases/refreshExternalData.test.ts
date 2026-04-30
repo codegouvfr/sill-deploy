@@ -427,7 +427,7 @@ describe("fetches software extra data (from different providers)", () => {
                     keywords: [],
                     name: "Apache HTTP Server",
                     license: "Apache License v2.0",
-                    image: "//upload.wikimedia.org/wikipedia/commons/thumb/1/10/Apache_HTTP_server_logo_%282019-present%29.svg/250px-Apache_HTTP_server_logo_%282019-present%29.svg.png",
+                    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Apache_HTTP_server_logo_(2019-present).svg?width=250",
                     codeRepositoryUrl: "https://github.com/apache/httpd",
                     url: "https://httpd.apache.org/",
                     referencePublications: [],

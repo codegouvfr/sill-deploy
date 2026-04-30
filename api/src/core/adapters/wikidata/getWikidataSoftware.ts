@@ -26,6 +26,7 @@ import { identifersUtils } from "../../../tools/identifiersTools";
 import { repoUrlToIdentifer } from "../../../tools/repoAnalyser";
 import { makeWikidataAPIAgent } from "./ApiAgent";
 import { WikidataFetchError } from "./ApiAgent/entity";
+import { toCommonsSpecialFilePathUrl } from "./commonsImage";
 
 const { resolveLocalizedString } = createResolveLocalizedString({
     "currentLanguage": id<Language>("en"),
@@ -77,32 +78,23 @@ export const getWikidataSoftware: GetSoftwareExternal = memoize(
 
         const { getClaimDataValue } = createGetClaimDataValue({ entity });
 
-        const license = await (async () => {
-            const licenseId = getClaimDataValue<"wikibase-entityid">("P275")[0]?.id;
+        // License (P275) and programming-language (P277) are only ever read for
+        // their English alias. Fetch both in a single wbgetentities call with
+        // `props=aliases` — one round-trip and a few KB instead of two
+        // round-trips and a few hundred KB.
+        const licenseId = getClaimDataValue<"wikibase-entityid">("P275")[0]?.id;
+        const programmingLanguageId = getClaimDataValue<"wikibase-entityid">("P277")[0]?.id;
 
-            if (licenseId === undefined) {
-                return undefined;
-            }
+        const aliasesEnByEntityId = await wikidataAgent.fetchEntityAliasesEn(
+            [licenseId, programmingLanguageId].filter((id): id is string => id !== undefined)
+        );
 
-            console.info(`   -> fetching wiki license : ${licenseId}`);
-            const { entity } = await wikidataAgent.fetchEntity(licenseId).catch(() => ({ "entity": undefined }));
+        const license =
+            licenseId !== undefined ? { label: aliasesEnByEntityId[licenseId]?.aliasEn, id: licenseId } : undefined;
 
-            if (entity === undefined) {
-                return undefined;
-            }
-
-            return { "label": entity.aliases.en?.[0]?.value, "id": licenseId };
-        })();
-
-        const { entity: programmingLanguageEntity } = await wikidataAgent
-            .fetchEntity(getClaimDataValue<"wikibase-entityid">("P277")[0]?.id)
-            .catch(() => ({ "entity": undefined }));
-        const programmingLanguageLabel = programmingLanguageEntity
-            ? wikidataSingleLocalizedStringToLocalizedString(programmingLanguageEntity.labels)
-            : undefined;
-        const programmingLanguageString = programmingLanguageLabel
-            ? resolveLocalizedString(programmingLanguageLabel)
-            : undefined;
+        // Match the legacy resolver: prefer en, then fr, then `mul`.
+        const plEntry = programmingLanguageId !== undefined ? aliasesEnByEntityId[programmingLanguageId] : undefined;
+        const programmingLanguageString = plEntry?.labelEn ?? plEntry?.labelFr ?? plEntry?.labelMul;
 
         const versionClaim = lastestVersionClaim(entity);
 
@@ -135,14 +127,12 @@ export const getWikidataSoftware: GetSoftwareExternal = memoize(
             },
             "image": (() => {
                 const value = getClaimDataValue<"string">("P154")[0];
-                if (value === undefined) return undefined;
                 // Wikimedia blocks cross-origin hotlinks to direct
                 // `upload.wikimedia.org/.../thumb/...` URLs (the shape produced
                 // by scraping the rendered wikidata HTML page). Special:FilePath
                 // is their supported redirector: it 302s to a current valid
                 // thumbnail and the browser follows transparently.
-                const filename = value.replace(/ /g, "_");
-                return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=250`;
+                return toCommonsSpecialFilePathUrl(value);
             })(),
             ...(() => {
                 const websiteUrl = getClaimDataValue<"string">("P856")[0];

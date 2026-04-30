@@ -6,6 +6,7 @@ import { GetSoftwareFormData } from "../../ports/GetSoftwareFormData";
 import { SoftwareFormData } from "../../usecases/readWriteSillData";
 import { makeWikidataAPIAgent } from "./ApiAgent";
 import { WikidataFetchError } from "./ApiAgent/entity";
+import { toCommonsSpecialFilePathUrl } from "./commonsImage";
 import { createGetClaimDataValue } from "./getWikidataSoftware";
 
 export const getWikidataForm: GetSoftwareFormData = async ({
@@ -68,7 +69,7 @@ export const getWikidataForm: GetSoftwareFormData = async ({
             sourceSlug: source.slug,
             license: license?.label ?? "Copyright",
             similarSoftwareExternalDataItems: [],
-            image: `https://upload.wikimedia.org/wikipedia/commons/6/69/${logoName?.replace(" ", "_") ?? ""}`,
+            image: toCommonsSpecialFilePathUrl(logoName),
             keywords: [],
             customAttributes: undefined
         };

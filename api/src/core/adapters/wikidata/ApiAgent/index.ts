@@ -4,13 +4,14 @@
 
 import { convertSourceConfigToRequestInit } from "../../../../tools/sourceConfig";
 import { Source } from "../../../usecases/readWriteSillData";
-import { fetchEntity } from "./entity";
+import { fetchEntity, fetchEntityAliasesEn } from "./entity";
 import { getLicenses } from "./getLicenses";
 
 export const makeWikidataAPIAgent = (source: Source) => {
     const requestInit = convertSourceConfigToRequestInit(source.configuration);
     return {
         fetchEntity: (entityId: string) => fetchEntity({ wikidataId: entityId, requestInit }),
+        fetchEntityAliasesEn: (wikidataIds: string[]) => fetchEntityAliasesEn({ wikidataIds, requestInit }),
         getLicenses: (wikidataIds: string[]) => getLicenses({ wikidataIds, sourceUrl: source.url, requestInit })
     };
 };
