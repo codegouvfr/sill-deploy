@@ -33,29 +33,61 @@ const { resolveLocalizedString } = createResolveLocalizedString({
     "fallbackLanguage": "en"
 });
 
+const publicationDateQualifier = "P577";
+
+type WikidataVersionClaim = WikidataEntity["claims"][string][number];
+
+const getVersionString = (claim: WikidataVersionClaim): string | undefined => {
+    const value = claim.mainsnak.datavalue?.value;
+
+    return typeof value === "string" ? value : undefined;
+};
+
+const getPublicationDate = (claim: WikidataVersionClaim): Date | undefined => {
+    const value = claim.qualifiers?.[publicationDateQualifier]?.[0].datavalue.value as WikidataTime | undefined;
+
+    return value?.time ? wikidataTimeToJSDate(value) : undefined;
+};
+
 const compareVersion = (version1: string[], version2: string[]): boolean => {
     if (version1.length === 0) return false;
 
-    if (Number(version1[0]) === Number(version2[0] ?? 0)) {
+    const version1Part = Number(version1[0]?.match(/\d+/)?.[0] ?? 0);
+    const version2Part = Number(version2[0]?.match(/\d+/)?.[0] ?? 0);
+
+    if (version1Part === version2Part) {
         return compareVersion(version1.slice(1), version2.slice(1));
     }
 
-    return Number(version1[0]) > Number(version2[0]);
+    return version1Part > version2Part;
 };
 
-const lastestVersionClaim = (ent: WikidataEntity) => {
-    return ent?.claims?.P348?.reduce((acc, statementClaim) => {
-        const versionString = statementClaim.mainsnak.datavalue?.value;
-        const oldversionString = acc.mainsnak.datavalue.value;
+export const latestVersionClaim = (ent: WikidataEntity): WikidataVersionClaim | undefined =>
+    ent.claims.P348?.reduce<WikidataVersionClaim | undefined>((acc, statementClaim) => {
+        const versionString = getVersionString(statementClaim);
 
-        if (!versionString) return acc;
-        if (typeof versionString === "string" && typeof oldversionString === "string") {
-            return compareVersion(versionString.split("."), oldversionString.split(".")) ? statementClaim : acc;
-        } else {
-            throw TypeError("Type not supported");
+        if (statementClaim.rank === "deprecated" || versionString === undefined) return acc;
+        if (acc === undefined) return statementClaim;
+        if (statementClaim.rank === "preferred" && acc.rank !== "preferred") return statementClaim;
+        if (statementClaim.rank !== "preferred" && acc.rank === "preferred") return acc;
+
+        const publicationTime = getPublicationDate(statementClaim)?.getTime();
+        const previousPublicationTime = getPublicationDate(acc)?.getTime();
+
+        if (
+            publicationTime !== undefined &&
+            previousPublicationTime !== undefined &&
+            publicationTime !== previousPublicationTime
+        ) {
+            return publicationTime > previousPublicationTime ? statementClaim : acc;
         }
-    });
-};
+
+        const previousVersionString = getVersionString(acc);
+
+        if (previousVersionString === undefined) return statementClaim;
+
+        return compareVersion(versionString.split("."), previousVersionString.split(".")) ? statementClaim : acc;
+    }, undefined);
 
 export const getWikidataSoftware: GetSoftwareExternal = memoize(
     async ({ externalId, source }: { externalId: string; source: Source }): Promise<SoftwareExternal | undefined> => {
@@ -96,15 +128,8 @@ export const getWikidataSoftware: GetSoftwareExternal = memoize(
         const plEntry = programmingLanguageId !== undefined ? aliasesEnByEntityId[programmingLanguageId] : undefined;
         const programmingLanguageString = plEntry?.labelEn ?? plEntry?.labelFr ?? plEntry?.labelMul;
 
-        const versionClaim = lastestVersionClaim(entity);
-
-        const publicationDateQualifier = "P577";
-        const publicationTimeDateValue = versionClaim?.qualifiers?.[publicationDateQualifier]?.[0].datavalue.value as
-            | WikidataTime
-            | undefined;
-        const publicationTimeDate = publicationTimeDateValue?.time
-            ? wikidataTimeToJSDate(publicationTimeDateValue)
-            : undefined;
+        const versionClaim = latestVersionClaim(entity);
+        const publicationTimeDate = versionClaim === undefined ? undefined : getPublicationDate(versionClaim);
 
         const framaLibreId = getClaimDataValue<"string">("P4107")[0];
 
