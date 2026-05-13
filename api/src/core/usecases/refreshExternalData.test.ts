@@ -465,8 +465,8 @@ describe("fetches software extra data (from different providers)", () => {
                         }
                     ],
                     programmingLanguages: ["C"],
-                    latestVersion: { version: "2.5.0-alpha", releaseDate: expect.any(String) },
-                    dateCreated: new Date("2017-11-08T00:00:00.000Z"),
+                    latestVersion: { version: "2.4.67", releaseDate: expect.any(String) },
+                    dateCreated: new Date("2026-05-04T00:00:00.000Z"),
                     lastDataFetchAt: expect.any(Date),
                     repoMetadata: undefined,
                     providers: [],
