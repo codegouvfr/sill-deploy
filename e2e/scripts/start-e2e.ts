@@ -216,7 +216,7 @@ const main = async () => {
 
         console.log("Starting Playwright...");
         const playwrightArgs = process.argv.slice(2);
-        const playwright = spawn("npx", ["playwright", "test", ...playwrightArgs], {
+        const playwright = spawn("pnpm", ["exec", "playwright", "test", ...playwrightArgs], {
             cwd: E2E_DIR,
             env: {
                 ...process.env,
