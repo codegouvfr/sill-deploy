@@ -145,7 +145,10 @@ describe("Create software, than updates it adding a similar software", () => {
         const updatedSimilarSofts = await dbApi.software.getSimilarSoftwareExternalDataPks({
             softwareId: craSoftwareId
         });
-        expectToMatchObject(updatedSimilarSofts, [
+        const sortedUpdatedSimilarSofts = updatedSimilarSofts.toSorted((left, right) =>
+            left.externalId.localeCompare(right.externalId)
+        );
+        expectToMatchObject(sortedUpdatedSimilarSofts, [
             { sourceSlug: testSource.slug, externalId: "Q111590996", softwareId: undefined },
             { sourceSlug: testSource.slug, externalId: "Q56062435", softwareId: undefined }
         ]);
