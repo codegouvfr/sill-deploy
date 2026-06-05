@@ -1,10 +1,18 @@
+# Local development values.
+# The chart-managed ingress is disabled here. Use ingress-api.yaml and ingress-web.yaml
+# so the API route can use a rewrite without affecting the web route.
 api:
   image:
     tag: "latest"
     pullPolicy: IfNotPresent
   env:
+    # Replace these values with your own OIDC provider if login is needed.
     OIDC_ISSUER_URI: "https://auth.code.gouv.fr/auth/realms/codegouv"
     OIDC_CLIENT_ID: "sill"
+    OIDC_CLIENT_SECRET: "change-this-for-login"
+    OIDC_MANAGE_PROFILE_URL: "https://app-preprod.moncomptepro.beta.gouv.fr/personal-information"
+    # Must match the public browser URL used to access this instance.
+    APP_URL: "http://catalogi.127.0.0.1.nip.io"
 
 update:
   image:
@@ -19,6 +27,9 @@ database:
 
 postgresql:
   enabled: true
+  # Workaround for Bitnami chart versions whose pinned image tag is no longer available upstream.
+  image:
+    tag: "latest"
   auth:
     postgresPassword: "postgres"
     username: "catalogi_user"

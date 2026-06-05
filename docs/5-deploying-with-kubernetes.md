@@ -10,6 +10,7 @@ This guide provides comprehensive instructions for deploying Catalogi on Kuberne
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
+- [How HTTP routing works](#how-http-routing-works)
 - [Local Development Deployment](#local-development-deployment)
 - [Production Deployment](#production-deployment)
 - [Configuration](#configuration)
@@ -59,17 +60,66 @@ helm install ingress-nginx ingress-nginx/ingress-nginx --create-namespace --name
 
 ---
 
+## How HTTP routing works
+
+Catalogi is deployed as two HTTP services:
+
+| Public path | Kubernetes service | Service port | Notes |
+| ----------- | ------------------ | ------------ | ----- |
+| `/` | `catalogi-web` | `80` | Static React application served by nginx. |
+| `/api(/|$)(.*)` | `catalogi-api` | `3000` | Express/tRPC API. Strip `/api` before the request reaches the API. |
+
+The web container's nginx only serves static files and the SPA fallback. It does **not** proxy `/api` to the backend. If `/api` reaches the web container, the browser receives `index.html` or an nginx HTML 404 page instead of JSON, and the frontend fails with a `JSON.parse`/tRPC error.
+
+For NGINX Ingress, use two Ingress resources: one for the web route and one for the API route. This avoids applying the API rewrite annotation to `/`.
+
+```yaml
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+    - host: catalogi.example.org
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: catalogi-api
+                port:
+                  number: 3000
+```
+
+After every install, verify that API routes return JSON:
+
+```bash
+curl -i https://<your-host>/api/getRedirectUrl
+curl -i https://<your-host>/api/fr/translations.json
+```
+
+---
+
 ## Local Development Deployment
 
-This section will guide you through deploying Catalogi on a local Kubernetes cluster for development and testing purposes.
+This section deploys Catalogi on a local Kubernetes cluster for development and testing. It was tested with Docker Desktop Kubernetes in `kind` mode and NGINX Ingress.
 
-### 1. Create a Namespace
+### 1. Verify the cluster
+
+```bash
+kubectl get nodes
+```
+
+With Docker Desktop, Kubernetes must be enabled in Settings → Kubernetes. The node should be `Ready`.
+
+### 2. Create a Namespace
 
 ```bash
 kubectl create namespace catalogi
 ```
 
-### 2. Add Required Helm Repositories
+### 3. Add Required Helm Repositories
 
 Add the Bitnami repository which contains the PostgreSQL dependency:
 
@@ -78,7 +128,18 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 ```
 
-### 3. Build Chart Dependencies
+### 4. Install NGINX Ingress if needed
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace \
+  --wait
+```
+
+### 5. Build Chart Dependencies
 
 From the root of the repository, run the following command to fetch the PostgreSQL dependency:
 
@@ -86,17 +147,32 @@ From the root of the repository, run the following command to fetch the PostgreS
 helm dependency build ./helm-charts/catalogi
 ```
 
-### 4. Deploy Catalogi
+### 6. Deploy Catalogi
 
-We provide an example values file that is pre-configured for local development. It uses the `latest` image tags and sets up a functional ingress configuration.
+We provide an example values file that is pre-configured for local development. It uses the `latest` image tags and disables the chart-managed ingress so the local NGINX ingress examples can define the required API rewrite explicitly.
+
+Before deploying, copy this file for your environment and update `api.env`. `APP_URL` must be the public browser URL of the instance, for example `http://catalogi.127.0.0.1.nip.io` locally or `https://catalogi.example.org` in production. The same URL must be allowed as an OIDC redirect/callback base by your identity provider if you want login to work.
 
 Deploy the chart using this file:
 
 ```bash
-helm install catalogi ./helm-charts/catalogi --namespace catalogi --values ./deployment-examples/helm/values-local-dev.yaml
+helm install catalogi ./helm-charts/catalogi \
+  --namespace catalogi \
+  --values ./deployment-examples/helm/values-local-dev.yaml
 ```
 
-### 5. Check Deployment Status
+Then expose the application with the split local ingress examples:
+
+```bash
+kubectl apply -f ./deployment-examples/helm/ingress-api.yaml
+kubectl apply -f ./deployment-examples/helm/ingress-web.yaml
+```
+
+These examples assume the release name is `catalogi` and the namespace is `catalogi`, which creates services named `catalogi-api` and `catalogi-web`.
+
+On Apple Silicon, if the published `codegouvfr/catalogi-*` images are not available for `linux/arm64`, build local images and use them in your values file or push them to a registry reachable by your local cluster.
+
+### 7. Check Deployment Status
 
 It may take a few minutes for all the pods to become ready. You can monitor the status with:
 
@@ -108,9 +184,18 @@ Once all pods show `1/1` in the `READY` column, the deployment is complete.
 
 The `catalogi-api` pod includes an `initContainer` that waits for the database to be ready before starting the application, which should prevent most startup issues.
 
-### 6. Accessing the Application
+### 8. Accessing the Application
 
-The local development values configure the ingress to be accessible at `http://catalogi.127.0.0.1.nip.io`. You should be able to open this URL in your browser to see the Catalogi frontend.
+The local ingress examples expose the application at `http://catalogi.127.0.0.1.nip.io` and `http://localhost`. You should be able to open one of these URLs in your browser to see the Catalogi frontend.
+
+Verify that API requests reach the API service, not the web container:
+
+```bash
+curl -i http://catalogi.127.0.0.1.nip.io/api/getRedirectUrl
+curl -i http://catalogi.127.0.0.1.nip.io/api/fr/translations.json
+```
+
+These responses must be JSON. If they return `text/html`, `index.html`, or an nginx HTML 404 page, `/api` is routed to the web nginx instead of the API service.
 
 ---
 
@@ -143,15 +228,19 @@ Catalogi is configured using Helm values. You can find examples in `deployment-e
 
 ### Important Parameters
 
-| Parameter                 | Description                       | Default                     |
-| ------------------------- | --------------------------------- | --------------------------- |
-| `ingress.hosts[0].host`   | Your application's domain name    | `catalogi.local`            |
-| `api.env.OIDC_ISSUER_URI` | **Required** OIDC provider URL    | `""`                        |
-| `api.env.OIDC_CLIENT_ID`  | **Required** OIDC client ID       | `""`                        |
-| `database.password`       | Database password                 | `change-this-in-production` |
-| `postgresql.enabled`      | Use the built-in PostgreSQL chart | `true`                      |
+| Parameter | Description | Default |
+| --------- | ----------- | ------- |
+| `ingress.hosts[0].host` | Application domain name for chart-managed ingress. | `catalogi.local` |
+| `api.env.APP_URL` | Public browser URL. Used for CORS and auth redirects. | must be set |
+| `api.env.OIDC_ISSUER_URI` | OIDC provider URL. | must be set |
+| `api.env.OIDC_CLIENT_ID` | OIDC client ID. | must be set |
+| `api.env.OIDC_CLIENT_SECRET` | OIDC client secret. Store with care in production. | must be set |
+| `api.env.OIDC_MANAGE_PROFILE_URL` | User profile management URL. | must be set |
+| `database.password` | Database password. | `change-this-in-production` |
+| `postgresql.enabled` | Use the built-in PostgreSQL chart. | `true` |
+| `customization.enabled` | Mount a custom UI config and translations into the API. Keep disabled unless your config matches the current schema. | `false` |
 
-**Note:** The `OIDC_ISSUER_URI` and `OIDC_CLIENT_ID` environment variables for the API are mandatory. The application will not start without them.
+**Note:** the API validates required environment variables at startup. Missing OIDC variables or `APP_URL` make the API pod crash before serving traffic.
 
 ---
 
@@ -159,18 +248,81 @@ Catalogi is configured using Helm values. You can find examples in `deployment-e
 
 ### Common Issues
 
-#### Pods are stuck in `ErrImagePull` or `ImagePullBackOff`
+#### Frontend error: `JSON.parse: unexpected character` on `/api/getRedirectUrl`
 
-This usually means the image tag specified in your values file does not exist. The default chart now uses the `latest` tag, which is generally available. If you specify a version, ensure it exists on Docker Hub.
+This usually means `/api` is routed to the web container instead of the API service. The web image contains an nginx server for static files only; it does not proxy API calls. Its SPA fallback can return `index.html` for `/api/...`, which then makes tRPC fail while parsing HTML as JSON.
 
-**For Apple Silicon (ARM64) users:** If you encounter errors like `no matching manifest for linux/arm64/v8`, you need to manually pull the AMD64 images:
+Expected routing:
+
+- `/` → `catalogi-web` service, port `80`
+- `/api(/|$)(.*)` → `catalogi-api` service, port `3000`, with rewrite target `/$2`
+
+For NGINX Ingress, use the split examples:
 
 ```bash
-docker pull --platform linux/amd64 codegouvfr/catalogi-web:latest
-docker pull --platform linux/amd64 codegouvfr/catalogi-api:latest
+kubectl apply -f ./deployment-examples/helm/ingress-api.yaml
+kubectl apply -f ./deployment-examples/helm/ingress-web.yaml
 ```
 
-The local development values file has been configured with `pullPolicy: IfNotPresent` to use local images once pulled.
+Quick diagnosis:
+
+```bash
+curl -i https://<your-host>/api/getRedirectUrl
+curl -i https://<your-host>/api/fr/translations.json
+```
+
+If the response is `text/html`, `index.html`, or an nginx 404 HTML page, fix the ingress/proxy before debugging ProConnect.
+
+#### API pod crashes with missing OIDC or `APP_URL` variables
+
+The API requires these environment variables:
+
+- `OIDC_ISSUER_URI`
+- `OIDC_CLIENT_ID`
+- `OIDC_CLIENT_SECRET`
+- `OIDC_MANAGE_PROFILE_URL`
+- `APP_URL`
+
+`APP_URL` must match the public URL used by the browser. It is used for CORS and authentication redirects.
+
+#### Pods are stuck in `ErrImagePull` or `ImagePullBackOff`
+
+This usually means the image tag specified in your values file does not exist or is not available for your CPU architecture. If you specify a version, ensure it exists on Docker Hub.
+
+**For Apple Silicon (ARM64) users:** if you encounter `no matching manifest for linux/arm64/v8`, the published image is not available for your local architecture. Options:
+
+1. Build ARM images locally and push them to a registry reachable by the cluster.
+2. Load local images into your local cluster if your cluster tool supports it.
+3. Use an amd64-capable cluster or enable amd64 emulation if your Kubernetes runtime supports it.
+
+Docker Desktop Kubernetes in `kind` mode may not see images from the local Docker daemon directly. During local debugging, pushing local images to a temporary registry such as `ttl.sh` can unblock tests:
+
+```bash
+docker build --target web -t catalogi-web:local -f Dockerfile.web .
+docker build -t catalogi-api:local -f Dockerfile.api .
+
+IMAGE_SUFFIX=$(date +%s)
+WEB_IMAGE=ttl.sh/catalogi-web-${IMAGE_SUFFIX}:1h
+API_IMAGE=ttl.sh/catalogi-api-${IMAGE_SUFFIX}:1h
+
+docker tag catalogi-web:local ${WEB_IMAGE}
+docker tag catalogi-api:local ${API_IMAGE}
+docker push ${WEB_IMAGE}
+docker push ${API_IMAGE}
+
+helm upgrade --install catalogi ./helm-charts/catalogi \
+  --namespace catalogi \
+  --create-namespace \
+  --values ./deployment-examples/helm/values-local-dev.yaml \
+  --set web.image.repository=${WEB_IMAGE%:*} \
+  --set web.image.tag=${WEB_IMAGE##*:} \
+  --set api.image.repository=${API_IMAGE%:*} \
+  --set api.image.tag=${API_IMAGE##*:} \
+  --set update.image.repository=${API_IMAGE%:*} \
+  --set update.image.tag=${API_IMAGE##*:}
+```
+
+Do not use temporary registries for production.
 
 #### Database Connection Errors (`ECONNREFUSED`)
 

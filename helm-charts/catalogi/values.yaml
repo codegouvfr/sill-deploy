@@ -113,6 +113,10 @@ database:
 # -- PostgreSQL sub-chart configuration.
 postgresql:
   enabled: true
+  # Bitnami currently publishes mutable PostgreSQL images under `latest` only for this chart line.
+  # Pin this in production if your registry provides stable tags.
+  image:
+    tag: "latest"
   auth:
     username: "catalogi_user"
     database: "catalogi_db"
@@ -124,7 +128,7 @@ postgresql:
 
 # -- Customization for the API (replaces the volume mount)
 customization:
-  enabled: true
+  enabled: false
   uiConfig: |-
     {
       "header": {

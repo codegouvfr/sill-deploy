@@ -35,13 +35,6 @@ spec:
                 {{- toYaml .Values.update.resources | nindent 16 }}
               env:
                 {{- include "catalogi.apiEnvs" . | nindent 16 }}
-                - name: DATABASE_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{ .Values.database.existingSecret | default (printf "%s-database" (include "catalogi.fullname" .)) }}
-                      key: database-url
-                - name: EXTERNAL_SOFTWARE_DATA_ORIGIN
-                  value: "wikidata"
               {{- if .Values.customization.enabled }}
               volumeMounts:
                 - name: customization

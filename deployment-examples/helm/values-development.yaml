@@ -90,8 +90,9 @@ adminer:
     tag: "latest"
 
 # Development customization
+# Disabled by default. Enable only with a uiConfig matching the current schema.
 customization:
-  enabled: true
+  enabled: false
   uiConfig: |-
     {
       "organizationFullName": "Development Instance",

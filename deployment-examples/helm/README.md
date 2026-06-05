@@ -10,6 +10,8 @@ This directory contains examples for deploying Catalogi using Helm charts.
 
 ## Quick Start
 
+For the complete deployment guide, including local Kubernetes setup and troubleshooting, see `../../docs/5-deploying-with-kubernetes.md`.
+
 ### 1. Add the Helm repository (if published)
 
 ```bash
@@ -20,16 +22,60 @@ helm repo update
 
 ### 2. Install with default values
 
+Default values are useful for rendering and smoke tests, but a real deployment must provide API environment variables and working ingress routing.
+
 ```bash
-helm install catalogi catalogi/catalogi
+helm install catalogi catalogi/catalogi \
+  --namespace catalogi \
+  --create-namespace \
+  -f your-values.yaml
 ```
 
 ### 3. Install from local chart
 
 ```bash
 # From the root of this repository
-helm install catalogi ./helm-charts/catalogi
+helm install catalogi ./helm-charts/catalogi \
+  --namespace catalogi \
+  --create-namespace \
+  -f your-values.yaml
 ```
+
+## Local ingress routing
+
+The web image serves static files with nginx. It does **not** proxy `/api` to the backend. Your ingress or external reverse proxy must route API calls explicitly.
+
+Expected routing:
+
+| Public path | Kubernetes service | Service port | Notes |
+| ----------- | ------------------ | ------------ | ----- |
+| `/` | `catalogi-web` | `80` | Static React app. |
+| `/api(/|$)(.*)` | `catalogi-api` | `3000` | Strip `/api` with rewrite target `/$2`. |
+
+For a local NGINX Ingress setup using release name `catalogi` and namespace `catalogi`, first copy `values-local-dev.yaml` and update `api.env` for your OIDC provider. `APP_URL` must match the browser URL, for example `http://catalogi.127.0.0.1.nip.io`.
+
+Then install:
+
+```bash
+helm install catalogi ./helm-charts/catalogi \
+  --namespace catalogi \
+  --create-namespace \
+  -f deployment-examples/helm/values-local-dev.yaml
+
+kubectl apply -f deployment-examples/helm/ingress-api.yaml
+kubectl apply -f deployment-examples/helm/ingress-web.yaml
+```
+
+Then test:
+
+```bash
+curl -i http://catalogi.127.0.0.1.nip.io/api/getRedirectUrl
+curl -i http://catalogi.127.0.0.1.nip.io/api/fr/translations.json
+```
+
+Both responses must be JSON. If they return `text/html`, `index.html`, or an nginx HTML 404 page, `/api` is routed to the web nginx instead of the API service.
+
+On Apple Silicon, if `codegouvfr/catalogi-web:latest` or `codegouvfr/catalogi-api:latest` cannot be pulled for `linux/arm64`, build the images locally and push them to a registry reachable by your local cluster.
 
 ## Configuration Examples
 
@@ -38,7 +84,7 @@ helm install catalogi ./helm-charts/catalogi
 See `values-basic.yaml` for a minimal production-ready configuration.
 
 ```bash
-helm install catalogi ./helm-charts/catalogi -f deployment-examples/helm/values-basic.yaml
+helm install catalogi ./helm-charts/catalogi --namespace catalogi --create-namespace -f deployment-examples/helm/values-basic.yaml
 ```
 
 ### Production Configuration
@@ -50,7 +96,7 @@ See `values-production.yaml` for a comprehensive production setup with:
 - Security contexts
 
 ```bash
-helm install catalogi ./helm-charts/catalogi -f deployment-examples/helm/values-production.yaml
+helm install catalogi ./helm-charts/catalogi --namespace catalogi --create-namespace -f deployment-examples/helm/values-production.yaml
 ```
 
 ### Development Configuration
@@ -61,8 +107,10 @@ See `values-development.yaml` for local development with:
 - Debug settings
 
 ```bash
-helm install catalogi ./helm-charts/catalogi -f deployment-examples/helm/values-development.yaml
+helm install catalogi ./helm-charts/catalogi --namespace catalogi --create-namespace -f deployment-examples/helm/values-development.yaml
 ```
+
+Note: `values-development.yaml` enables the chart-managed ingress. If your controller does not strip `/api`, use `values-local-dev.yaml` plus the split ingress examples above instead.
 
 ## Customization
 
