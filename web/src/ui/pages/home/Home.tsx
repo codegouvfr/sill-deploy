@@ -121,7 +121,11 @@ export default function Home(props: Props) {
                 }}
             >
                 <HomepageWaveSvg
+                    preserveAspectRatio="none"
                     className={css({
+                        display: "block",
+                        width: "100%",
+                        height: 90,
                         "& path": {
                             fill: fr.colors.decisions.background.alt.blueFrance.default
                         }
@@ -131,7 +135,7 @@ export default function Home(props: Props) {
 
             {uiConfig?.home?.softwareSelection?.enabled && (
                 <section
-                    className={cx(classes.softwareSelectionBackground, classes.section)}
+                    className={cx(classes.section, classes.softwareSelectionBackground)}
                 >
                     <div className={fr.cx("fr-container")}>
                         <h2 className={classes.titleSection}>
@@ -148,7 +152,7 @@ export default function Home(props: Props) {
 
             {uiConfig?.home?.quickAccess?.enabled && (
                 <section
-                    className={cx(classes.softwareSelectionBackground, classes.section)}
+                    className={cx(classes.section, classes.softwareSelectionBackground)}
                 >
                     <div className={fr.cx("fr-container")}>
                         <Grid
@@ -411,7 +415,8 @@ const useStyles = tss.withName({ Home }).create({
         textAlign: "center"
     },
     softwareSelectionBackground: {
-        backgroundColor: fr.colors.decisions.background.alt.blueFrance.default
+        backgroundColor: fr.colors.decisions.background.alt.blueFrance.default,
+        paddingTop: fr.spacing("10v")
     },
     softwareSelection: {
         display: "grid",
@@ -484,11 +489,10 @@ const { HeroSection } = (() => {
         root: {
             display: "flex",
             [fr.breakpoints.down("md")]: {
-                flexDirection: "column",
-                marginTop: fr.spacing("10v")
+                flexDirection: "column"
             },
-            marginTop: fr.spacing("20v"),
-            marginBottom: fr.spacing("10v")
+            marginTop: fr.spacing("6v"),
+            marginBottom: fr.spacing("2v")
         },
         titleWrapper: {
             flex: 1,
