@@ -16,6 +16,7 @@ import { useCoreState } from "core";
 import { useState } from "react";
 
 import { Trans, useTranslation } from "react-i18next";
+import { useResolveLocalizedString } from "ui/i18n";
 import { Waypoint } from "react-waypoint";
 import type { Equals } from "tsafe";
 import { assert } from "tsafe/assert";
@@ -40,6 +41,7 @@ export default function Home(props: Props) {
 
     const { cx, classes, css } = useStyles();
     const { t } = useTranslation();
+    const { resolveLocalizedString } = useResolveLocalizedString();
 
     const stats = useCoreState("generalStats", "main");
 
@@ -59,44 +61,54 @@ export default function Home(props: Props) {
         Object.keys(configUseCases) as ApiTypes.ConfigurableUseCaseName[]
     ).filter(key => configUseCases[key].enabled);
 
-    const softwareSelectionList = [
-        {
-            title: t("home.lastAdded"),
-            linkProps: routes.softwareCatalog({
-                sort: "added_time"
-            }).link
-        },
-        {
-            title: t("home.mostUsed"),
-            linkProps: routes.softwareCatalog({
-                sort: "user_count"
-            }).link
-        },
-        {
-            title: t("home.essential"),
-            linkProps: routes.softwareCatalog({
-                attributeNames: ["isInstallableOnUserComputer"]
-            }).link
-        },
-        {
-            title: t("home.recentlyUpdated"),
-            linkProps: routes.softwareCatalog({
-                sort: "latest_version_publication_date"
-            }).link
-        },
-        {
-            title: t("home.waitingForReferent"),
-            linkProps: routes.softwareCatalog({
-                sort: "referent_count_ASC"
-            }).link
-        },
-        {
-            title: t("home.inSupportMarket"),
-            linkProps: routes.softwareCatalog({
-                attributeNames: ["isPresentInSupportContract"]
-            }).link
-        }
-    ];
+    const configCards = uiConfig.home.softwareSelection.cards;
+    const softwareSelectionList =
+        configCards !== undefined
+            ? configCards.map(card => ({
+                  title: resolveLocalizedString(card.title),
+                  linkProps: routes.softwareCatalog({
+                      sort: card.sort,
+                      attributeNames: card.attributeNames
+                  }).link
+              }))
+            : [
+                  {
+                      title: t("home.lastAdded"),
+                      linkProps: routes.softwareCatalog({
+                          sort: "added_time"
+                      }).link
+                  },
+                  {
+                      title: t("home.mostUsed"),
+                      linkProps: routes.softwareCatalog({
+                          sort: "user_count"
+                      }).link
+                  },
+                  {
+                      title: t("home.essential"),
+                      linkProps: routes.softwareCatalog({
+                          attributeNames: ["isInstallableOnUserComputer"]
+                      }).link
+                  },
+                  {
+                      title: t("home.recentlyUpdated"),
+                      linkProps: routes.softwareCatalog({
+                          sort: "latest_version_publication_date"
+                      }).link
+                  },
+                  {
+                      title: t("home.waitingForReferent"),
+                      linkProps: routes.softwareCatalog({
+                          sort: "referent_count_ASC"
+                      }).link
+                  },
+                  {
+                      title: t("home.inSupportMarket"),
+                      linkProps: routes.softwareCatalog({
+                          attributeNames: ["isPresentInSupportContract"]
+                      }).link
+                  }
+              ];
 
     return (
         <div className={className}>

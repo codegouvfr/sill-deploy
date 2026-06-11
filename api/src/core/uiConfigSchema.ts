@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 import { z } from "zod";
+import { languages } from "./ports/GetSoftwareExternalData";
+
+const localizedStringSchema = z.union([z.string(), z.record(z.enum(languages), z.string())]);
 
 const headerSchema = z.object({
     link: z.object({
@@ -52,9 +55,28 @@ export type ConfigurableUseCaseName = keyof z.infer<typeof usecases>;
 
 const statsSchema = z.enum(["softwareCount", "registeredUserCount", "agentReferentCount", "organizationCount"]);
 
+const softwareSelectionCardSchema = z.object({
+    title: localizedStringSchema,
+    sort: z
+        .enum([
+            "added_time",
+            "update_time",
+            "latest_version_publication_date",
+            "user_count",
+            "referent_count",
+            "user_count_ASC",
+            "referent_count_ASC"
+        ])
+        .optional(),
+    attributeNames: z.array(z.string()).optional()
+});
+
+export type SoftwareSelectionCard = z.infer<typeof softwareSelectionCardSchema>;
+
 const homeSchema = z.object({
     softwareSelection: z.object({
-        enabled: z.boolean()
+        enabled: z.boolean(),
+        cards: z.array(softwareSelectionCardSchema).optional()
     }),
     theSillInAFewWordsParagraphLinks: z.array(z.string().url()),
     searchBar: z.object({
