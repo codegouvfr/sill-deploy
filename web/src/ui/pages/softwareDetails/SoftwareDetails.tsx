@@ -26,6 +26,10 @@ import {
     openDeclarationRemovalModal,
     DeclarationRemovalModal
 } from "ui/shared/DeclarationRemovalModal";
+import {
+    openSoftwareProtectionModal,
+    SoftwareProtectionModal
+} from "ui/shared/SoftwareProtectionModal";
 import CircularProgress from "@mui/material/CircularProgress";
 import type { ApiTypes } from "api";
 
@@ -78,10 +82,10 @@ export default function SoftwareDetails(props: Props) {
     };
 
     const canCurrentUserBypassSoftwareProtections = currentUser?.role === "admin";
-    const showUnreferencingProtectionAlert =
+    const isDereferencingProtected =
         software.protections?.dereferencing?.isProtected === true &&
         !canCurrentUserBypassSoftwareProtections;
-    const showEditionProtectionAlert =
+    const isEditionProtected =
         software.protections?.edition?.isProtected === true &&
         !canCurrentUserBypassSoftwareProtections;
 
@@ -306,70 +310,67 @@ export default function SoftwareDetails(props: Props) {
                             userCount={software.userCount ?? 0}
                         />
                         <div className={classes.buttons}>
-                            {software.dereferencing === undefined &&
-                                (showUnreferencingProtectionAlert ? (
-                                    <Alert
-                                        severity="info"
-                                        title={t(
-                                            "softwareDetails.protectedFromUnreferencingTitle"
-                                        )}
-                                        description={t(
-                                            "softwareDetails.protectedFromUnreferencingDescription"
-                                        )}
-                                    />
-                                ) : (
-                                    <Button
-                                        priority="secondary"
-                                        disabled={isUnreferencingOngoing}
-                                        onClick={() => {
-                                            if (!currentUser) {
-                                                userAuthentication.login();
-                                                return;
-                                            }
-
-                                            const userInput = window.prompt(
-                                                t(
-                                                    "softwareDetails.please provide a reason for unreferencing this software"
-                                                )
-                                            );
-
-                                            if (userInput === null || userInput === "") {
-                                                return;
-                                            }
-
-                                            softwareDetails.unreference({
-                                                reason: userInput
-                                            });
-                                        }}
-                                    >
-                                        {isUnreferencingOngoing ? (
-                                            <CircularProgress size={17} />
-                                        ) : (
-                                            t("softwareDetails.unreference software")
-                                        )}
-                                    </Button>
-                                ))}
-
-                            {showEditionProtectionAlert ? (
-                                <Alert
-                                    severity="info"
-                                    title={t("softwareDetails.protectedFromEditingTitle")}
-                                    description={t(
-                                        "softwareDetails.protectedFromEditingDescription"
-                                    )}
-                                />
-                            ) : (
+                            {software.dereferencing === undefined && (
                                 <Button
                                     priority="secondary"
-                                    linkProps={
-                                        routes.softwareUpdateForm({
-                                            id: software.id
-                                        }).link
-                                    }
+                                    disabled={isUnreferencingOngoing}
+                                    onClick={() => {
+                                        if (!currentUser) {
+                                            userAuthentication.login();
+                                            return;
+                                        }
+
+                                        if (isDereferencingProtected) {
+                                            openSoftwareProtectionModal({
+                                                type: "dereferencing",
+                                                reason: software.protections
+                                                    ?.dereferencing?.reason
+                                            });
+                                            return;
+                                        }
+
+                                        const userInput = window.prompt(
+                                            t(
+                                                "softwareDetails.please provide a reason for unreferencing this software"
+                                            )
+                                        );
+
+                                        if (userInput === null || userInput === "") {
+                                            return;
+                                        }
+
+                                        softwareDetails.unreference({
+                                            reason: userInput
+                                        });
+                                    }}
                                 >
-                                    {t("softwareDetails.edit software")}
+                                    {isUnreferencingOngoing ? (
+                                        <CircularProgress size={17} />
+                                    ) : (
+                                        t("softwareDetails.unreference software")
+                                    )}
                                 </Button>
                             )}
+
+                            <Button
+                                priority="secondary"
+                                {...(isEditionProtected
+                                    ? {
+                                          onClick: () =>
+                                              openSoftwareProtectionModal({
+                                                  type: "edition",
+                                                  reason: software.protections?.edition
+                                                      ?.reason
+                                              })
+                                      }
+                                    : {
+                                          linkProps: routes.softwareUpdateForm({
+                                              id: software.id
+                                          }).link
+                                      })}
+                            >
+                                {t("softwareDetails.edit software")}
+                            </Button>
                             {(() => {
                                 const declarationType = userDeclaration?.isReferent
                                     ? "referent"
@@ -429,6 +430,7 @@ export default function SoftwareDetails(props: Props) {
                 )}
             </div>
             {userDeclaration !== undefined && <DeclarationRemovalModal />}
+            <SoftwareProtectionModal />
         </>
     );
 }

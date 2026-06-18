@@ -242,6 +242,8 @@
         "protectedFromUnreferencingDescription": "This software is protected and cannot be dereferenced. Contact an administrator if you think it should be removed from the catalogue.",
         "protectedFromEditingTitle": "Protected software",
         "protectedFromEditingDescription": "This software is protected and cannot be edited. Contact an administrator if changes are needed.",
+        "protectionAdminMessage": "Administrator's message:",
+        "protectionModalClose": "Close",
         "error": {
             "title": "Software not found",
             "notFound": "The requested software could not be found in the catalog. It may have been removed or the name might be incorrect.",

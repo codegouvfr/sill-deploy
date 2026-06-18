@@ -245,6 +245,8 @@
         "protectedFromUnreferencingDescription": "Ce logiciel est protégé et ne peut pas être déréférencé. Contactez un administrateur si vous pensez qu’il doit être retiré du catalogue.",
         "protectedFromEditingTitle": "Logiciel protégé",
         "protectedFromEditingDescription": "Ce logiciel est protégé et ne peut pas être modifié. Contactez un administrateur si des changements sont nécessaires.",
+        "protectionAdminMessage": "Message de l'administrateur :",
+        "protectionModalClose": "Fermer",
         "error": {
             "title": "Logiciel introuvable",
             "notFound": "Le logiciel demandé n'a pas pu être trouvé dans le catalogue. Il a peut-être été supprimé ou le nom pourrait être incorrect.",
