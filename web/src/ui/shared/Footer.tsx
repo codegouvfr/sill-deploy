@@ -31,7 +31,7 @@ export const Footer = memo(
                 <DsfrFooter
                     ref={ref}
                     className={className}
-                    accessibility="fully compliant"
+                    accessibility="non compliant"
                     termsLinkProps={routes.terms().link}
                     bottomItems={[
                         {

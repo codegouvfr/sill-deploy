@@ -1,6 +1,7 @@
 {
     "header": {
         "link": {
+            "icon": "bank",
             "linkProps": {
                 "href": "https://code.gouv.fr"
             },

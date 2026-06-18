@@ -6,10 +6,12 @@ import { z } from "zod";
 import { languages } from "./ports/GetSoftwareExternalData";
 
 const localizedStringSchema = z.union([z.string(), z.record(z.enum(languages), z.string())]);
+const headerLinkIconSchema = z.enum(["bank", "compass"]).default("bank");
 
 const headerSchema = z.object({
     link: z.object({
         enabled: z.boolean(),
+        icon: headerLinkIconSchema,
         linkProps: z.object({
             href: z.string().url()
         }),

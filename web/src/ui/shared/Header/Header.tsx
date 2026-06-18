@@ -18,6 +18,11 @@ type Props = {
     userAuthenticationApi: UserAuthenticationApi;
 };
 
+const headerLinkIconIds = {
+    bank: "fr-icon-bank-fill",
+    compass: "fr-icon-compass-3-fill"
+} satisfies Record<string, HeaderProps.QuickAccessItem["iconId"]>;
+
 export const Header = memo(
     forwardRef<HTMLDivElement, Props>((props, ref) => {
         const { className, routeName, userAuthenticationApi, ...rest } = props;
@@ -83,7 +88,7 @@ export const Header = memo(
         const link: HeaderProps.QuickAccessItem | null =
             uiConfig?.header.link && uiConfig.header.link.enabled
                 ? {
-                      iconId: "fr-icon-bank-fill",
+                      iconId: headerLinkIconIds[uiConfig.header.link.icon],
                       linkProps: uiConfig.header.link.linkProps,
                       text: uiConfig.header.link.text
                   }
